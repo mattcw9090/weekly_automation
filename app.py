@@ -120,6 +120,14 @@ def selenium_booking_task_grouped(credits_list):
                 pay_now_button.click()
                 print(f"[Tab {idx + 1}] Clicked on 'Pay now' button.")
 
+                # Wait for the "Pay without Link" span element to be visible
+                pay_without_link_button = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, "//span[contains(text(), 'Pay without Link')]")
+                    )
+                )
+                pay_without_link_button.click()
+
             except Exception as e:
                 print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
 
