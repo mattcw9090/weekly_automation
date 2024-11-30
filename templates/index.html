@@ -201,6 +201,11 @@
             credits += `${halfHours}x $${(pricePerHour / 2).toFixed(2)}`;
         }
 
+        // Check if all credits are $0.00, if so, return an empty string
+        if (credits.split('\n').every(line => line.includes('$0.00'))) {
+            return '';
+        }
+
         return credits;
     }
 
