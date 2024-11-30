@@ -35,9 +35,9 @@
                 <tr>
                     <th>Student Name</th>
                     <th>Day of the Week</th>
+                    <th>Court Location</th>
                     <th>Session Start</th>
                     <th>Session End</th>
-                    <th>Court Location</th>
                     <th>Court Type</th>
                     <th>Credits to Book</th>
                     <th>Actions</th>
@@ -59,6 +59,13 @@
                         </select>
                     </td>
                     <td>
+                        <select name="courtLocation[]" class="court-location" required>
+                            <option value="">Select Location</option>
+                            <option value="PBA Canningvale">PBA Canningvale</option>
+                            <option value="PBA Malaga">PBA Malaga</option>
+                        </select>
+                    </td>
+                    <td>
                         <select name="sessionStart[]" class="session-start" required>
                             <option value="">Select Time</option>
                             <!-- Options will be populated dynamically -->
@@ -68,13 +75,6 @@
                         <select name="sessionEnd[]" class="session-end" required>
                             <option value="">Select Time</option>
                             <!-- Options will be populated dynamically -->
-                        </select>
-                    </td>
-                    <td>
-                        <select name="courtLocation[]" class="court-location" required>
-                            <option value="">Select Location</option>
-                            <option value="PBA Canningvale">PBA Canningvale</option>
-                            <option value="PBA Malaga">PBA Malaga</option>
                         </select>
                     </td>
                     <td>
