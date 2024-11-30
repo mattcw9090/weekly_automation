@@ -42,6 +42,7 @@
                     <th>Session End</th>
                     <th>Court Type</th>
                     <th>Credits to Book</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -221,7 +222,7 @@
 
             let ratePerHour = 0;
             if (location === 'PBA Malaga') {
-                ratePerHour = isWeekendOrAfter5PM ? 25 : 15;
+                ratePerHour = isWeekendOrAfter5PM ? 29 : 19;
             } else if (location === 'PBA Canningvale') {
                 if (type === 'Hebat Court') {
                     ratePerHour = isWeekendOrAfter5PM ? 26 : 16;
@@ -375,6 +376,12 @@
                 </select>
             </td>
             <td class="credits-to-book"></td>
+            <td class="status-column">
+                <label><input type="checkbox" name="statusMessaged[]"> Messaged</label><br>
+                <label><input type="checkbox" name="statusConfirmed[]"> Confirmed</label><br>
+                <label><input type="checkbox" name="statusBoughtCredits[]"> Bought Credits</label><br>
+                <label><input type="checkbox" name="statusBooked[]"> Booked</label>
+            </td>
             <td><button type="button" class="delete-row">Delete</button></td>
         `;
         tableBody.appendChild(newRow);
@@ -457,6 +464,12 @@
                     </select>
                 </td>
                 <td class="credits-to-book"></td>
+                <td class="status-column">
+                    <label><input type="checkbox" name="statusMessaged[]" ${session.statusMessaged ? 'checked' : ''}> Messaged</label><br>
+                    <label><input type="checkbox" name="statusConfirmed[]" ${session.statusConfirmed ? 'checked' : ''}> Confirmed</label><br>
+                    <label><input type="checkbox" name="statusBoughtCredits[]" ${session.statusBoughtCredits ? 'checked' : ''}> Bought Credits</label><br>
+                    <label><input type="checkbox" name="statusBooked[]" ${session.statusBooked ? 'checked' : ''}> Booked</label>
+                </td>
                 <td><button type="button" class="delete-row">Delete</button></td>
             `;
             tableBody.appendChild(newRow);
@@ -498,6 +511,10 @@
             const sessionStart = row.querySelector('.session-start').value;
             const sessionEnd = row.querySelector('.session-end').value;
             const courtType = row.querySelector('.court-type').value;
+            const statusMessaged = row.querySelector('input[name="statusMessaged[]"]').checked;
+            const statusConfirmed = row.querySelector('input[name="statusConfirmed[]"]').checked;
+            const statusBoughtCredits = row.querySelector('input[name="statusBoughtCredits[]"]').checked;
+            const statusBooked = row.querySelector('input[name="statusBooked[]"]').checked;
 
             const sessionData = {
                 studentName,
@@ -505,7 +522,11 @@
                 courtLocation,
                 sessionStart,
                 sessionEnd,
-                courtType
+                courtType,
+                statusMessaged,
+                statusConfirmed,
+                statusBoughtCredits,
+                statusBooked
             };
             configData.push(sessionData);
         });
