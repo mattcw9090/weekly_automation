@@ -31,7 +31,7 @@
 </head>
 <body>
     <h1>Dynamic Table for Student Sessions</h1>
-    
+    <form id="sessionForm">
         <label for="weekStarting">Week Starting:</label>
         <input type="date" id="weekStarting" name="weekStarting" required>
         <br><br>
@@ -385,11 +385,14 @@
 
     // Prefill the form with data from the configuration file
     function prefillForm(data) {
+        // Set the week starting date
+        document.getElementById('weekStarting').value = data.weekStarting || '';
+
         // Clear existing rows
         const tableBody = document.querySelector('#studentTable tbody');
         tableBody.innerHTML = '';
 
-        data.forEach(session => {
+        data.sessions.forEach(session => {
             const newRow = document.createElement('tr');
             newRow.innerHTML = `
                 <td><input type="text" class="student-name" name="studentName[]" required></td>
@@ -471,7 +474,11 @@
 
     // Handle "Save Config" button click
     document.getElementById('saveConfigButton').addEventListener('click', async () => {
-        const configData = [];
+        const configData = {
+            weekStarting: document.getElementById('weekStarting').value,
+            sessions: []
+        };
+
         document.querySelectorAll('#studentTable tbody tr').forEach(row => {
             const studentName = row.querySelector('input[name="studentName[]"]').value;
             const dayOfWeek = row.querySelector('.day-of-week').value;
@@ -492,7 +499,7 @@
                 statusMessaged,
                 statusBooked
             };
-            configData.push(sessionData);
+            configData.sessions.push(sessionData);
         });
 
         const dataStr = JSON.stringify(configData, null, 4);
