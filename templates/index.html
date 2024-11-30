@@ -39,8 +39,16 @@
             <tbody>
                 <tr>
                     <td><input type="text" name="studentName[]" required></td>
-                    <td><input type="time" name="sessionStart[]" required></td>
-                    <td><input type="time" name="sessionEnd[]" required></td>
+                    <td>
+                        <select name="sessionStart[]" required>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </td>
+                    <td>
+                        <select name="sessionEnd[]" required>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </td>
                     <td>
                         <select name="courtLocation[]" class="court-location" required>
                             <option value="">Select Location</option>
@@ -67,56 +75,94 @@
     </form>
 
     <script>
-        document.getElementById('addRow').addEventListener('click', () => {
-            const tableBody = document.querySelector('#studentTable tbody');
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td><input type="text" name="studentName[]" required></td>
-                <td><input type="time" name="sessionStart[]" required></td>
-                <td><input type="time" name="sessionEnd[]" required></td>
-                <td>
-                    <select name="courtLocation[]" class="court-location" required>
-                        <option value="">Select Location</option>
-                        <option value="UWA">UWA</option>
-                        <option value="PBA Canningvale">PBA Canningvale</option>
-                        <option value="PBA Malaga">PBA Malaga</option>
-                    </select>
-                </td>
-                <td>
-                    <select name="courtType[]" class="court-type hidden">
-                        <option value="">Select Type</option>
-                        <option value="Indoor">Indoor</option>
-                        <option value="Outdoor">Outdoor</option>
-                    </select>
-                </td>
-                <td><button type="button" class="delete-row">Delete</button></td>
-            `;
-            tableBody.appendChild(newRow);
-            updateEventListeners();
+    function generateTimeOptions() {
+        const options = [];
+        for (let h = 6; h <= 21; h++) { // Start at 6 AM (6) and include up to 9 PM (21)
+            for (let m = 0; m < 60; m += 30) {
+                // Stop at 9:00 PM
+                if (h === 21 && m > 0) break;
+
+                const hour = h % 12 === 0 ? 12 : h % 12;
+                const minute = m.toString().padStart(2, '0');
+                const period = h < 12 ? 'AM' : 'PM';
+                const timeLabel = `${hour}:${minute} ${period}`;
+                const timeValue = `${h.toString().padStart(2, '0')}:${minute}`;
+                options.push(`<option value="${timeValue}">${timeLabel}</option>`);
+            }
+        }
+        return options.join('');
+    }
+
+    function populateTimeDropdowns() {
+        const timeOptions = generateTimeOptions();
+        document.querySelectorAll('select[name="sessionStart[]"], select[name="sessionEnd[]"]').forEach(select => {
+            select.innerHTML = timeOptions;
+        });
+    }
+
+    document.getElementById('addRow').addEventListener('click', () => {
+        const tableBody = document.querySelector('#studentTable tbody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="text" name="studentName[]" required></td>
+            <td>
+                <select name="sessionStart[]" required>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </td>
+            <td>
+                <select name="sessionEnd[]" required>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </td>
+            <td>
+                <select name="courtLocation[]" class="court-location" required>
+                    <option value="">Select Location</option>
+                    <option value="UWA">UWA</option>
+                    <option value="PBA Redcliffe">PBA Redcliffe</option>
+                    <option value="PBA Canningvale">PBA Canningvale</option>
+                    <option value="PBA Malaga">PBA Malaga</option>
+                    <option value="Kingsway">Kingsway</option>
+                </select>
+            </td>
+            <td>
+                <select name="courtType[]" class="court-type hidden">
+                    <option value="">Select Type</option>
+                    <option value="Indoor">Indoor</option>
+                    <option value="Outdoor">Outdoor</option>
+                </select>
+            </td>
+            <td><button type="button" class="delete-row">Delete</button></td>
+        `;
+        tableBody.appendChild(newRow);
+        populateTimeDropdowns();
+        updateEventListeners();
+    });
+
+    function updateEventListeners() {
+        document.querySelectorAll('.delete-row').forEach(button => {
+            button.addEventListener('click', (event) => {
+                event.target.closest('tr').remove();
+            });
         });
 
-        function updateEventListeners() {
-            document.querySelectorAll('.delete-row').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    event.target.closest('tr').remove();
-                });
+        document.querySelectorAll('.court-location').forEach(select => {
+            select.addEventListener('change', (event) => {
+                const courtType = event.target.closest('tr').querySelector('.court-type');
+                if (event.target.value === 'PBA Canningvale') {
+                    courtType.classList.remove('hidden');
+                    courtType.setAttribute('required', 'required');
+                } else {
+                    courtType.classList.add('hidden');
+                    courtType.removeAttribute('required');
+                }
             });
+        });
+    }
 
-            document.querySelectorAll('.court-location').forEach(select => {
-                select.addEventListener('change', (event) => {
-                    const courtType = event.target.closest('tr').querySelector('.court-type');
-                    if (event.target.value === 'PBA Canningvale') {
-                        courtType.classList.remove('hidden');
-                        courtType.setAttribute('required', 'required');
-                    } else {
-                        courtType.classList.add('hidden');
-                        courtType.removeAttribute('required');
-                    }
-                });
-            });
-        }
+    populateTimeDropdowns();
+    updateEventListeners();
+</script>
 
-        updateEventListeners();
-    </script>
 </body>
 </html>
