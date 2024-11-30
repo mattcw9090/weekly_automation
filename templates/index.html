@@ -31,7 +31,10 @@
 </head>
 <body>
     <h1>Dynamic Table for Student Sessions</h1>
-    <form action="/submit" method="POST">
+    
+        <label for="weekStarting">Week Starting:</label>
+        <input type="date" id="weekStarting" name="weekStarting" required>
+        <br><br>
         <table id="studentTable">
             <thead>
                 <tr>
@@ -274,6 +277,10 @@
     function tableBodyClickHandler(event) {
         if (event.target.classList.contains('delete-row')) {
             deleteRow(event);
+        } else if (event.target.classList.contains('message-button')) {
+            alert('Message sent to student.');
+        } else if (event.target.classList.contains('book-button')) {
+            alert('Session booked successfully.');
         }
     }
 
@@ -337,11 +344,13 @@
             <td class="credits-to-book"></td>
             <td class="status-column">
                 <label><input type="checkbox" name="statusMessaged[]"> Messaged</label><br>
-                <label><input type="checkbox" name="statusConfirmed[]"> Confirmed</label><br>
-                <label><input type="checkbox" name="statusBoughtCredits[]"> Bought Credits</label><br>
                 <label><input type="checkbox" name="statusBooked[]"> Booked</label>
             </td>
-            <td><button type="button" class="delete-row">Delete</button></td>
+            <td>
+                <button type="button" class="message-button">Message</button>
+                <button type="button" class="book-button">Book</button>
+                <button type="button" class="delete-row">Delete</button>
+            </td>
         `;
         tableBody.appendChild(newRow);
         populateTimeDropdowns(newRow);
@@ -423,11 +432,13 @@
                 <td class="credits-to-book"></td>
                 <td class="status-column">
                     <label><input type="checkbox" name="statusMessaged[]" ${session.statusMessaged ? 'checked' : ''}> Messaged</label><br>
-                    <label><input type="checkbox" name="statusConfirmed[]" ${session.statusConfirmed ? 'checked' : ''}> Confirmed</label><br>
-                    <label><input type="checkbox" name="statusBoughtCredits[]" ${session.statusBoughtCredits ? 'checked' : ''}> Bought Credits</label><br>
                     <label><input type="checkbox" name="statusBooked[]" ${session.statusBooked ? 'checked' : ''}> Booked</label>
                 </td>
-                <td><button type="button" class="delete-row">Delete</button></td>
+                <td>
+                    <button type="button" class="message-button">Message</button>
+                    <button type="button" class="book-button">Book</button>
+                    <button type="button" class="delete-row">Delete</button>
+                </td>
             `;
             tableBody.appendChild(newRow);
 
@@ -469,8 +480,6 @@
             const sessionEnd = row.querySelector('.session-end').value;
             const courtType = row.querySelector('.court-type').value;
             const statusMessaged = row.querySelector('input[name="statusMessaged[]"]').checked;
-            const statusConfirmed = row.querySelector('input[name="statusConfirmed[]"]').checked;
-            const statusBoughtCredits = row.querySelector('input[name="statusBoughtCredits[]"]').checked;
             const statusBooked = row.querySelector('input[name="statusBooked[]"]').checked;
 
             const sessionData = {
@@ -481,8 +490,6 @@
                 sessionEnd,
                 courtType,
                 statusMessaged,
-                statusConfirmed,
-                statusBoughtCredits,
                 statusBooked
             };
             configData.push(sessionData);
