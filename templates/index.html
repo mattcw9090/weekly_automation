@@ -25,6 +25,9 @@
             padding: 5px 10px;
             margin: 2px;
         }
+        option[disabled] {
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -94,6 +97,18 @@
     </form>
 
     <script>
+    /**
+     * Converts a time string in "HH:MM" format to minutes.
+     * @param {string} timeStr - Time string in "HH:MM" format.
+     * @returns {number} - Total minutes.
+     */
+    function convertTimeToMinutes(timeStr) {
+        const [hourStr, minuteStr] = timeStr.split(':');
+        const hour = parseInt(hourStr, 10);
+        const minute = parseInt(minuteStr, 10);
+        return hour * 60 + minute;
+    }
+
     /**
      * Generates time options based on location and day.
      * @param {string} location - The court location.
@@ -175,6 +190,49 @@
         if (previousEnd && sessionEndSelect.querySelector(`option[value="${previousEnd}"]`)) {
             sessionEndSelect.value = previousEnd;
         }
+
+        // Update end time options based on start time
+        handleSessionStartChange({ target: sessionStartSelect });
+    }
+
+    /**
+     * Handles changes to the session start time.
+     * @param {Event} event - The change event.
+     */
+    function handleSessionStartChange(event) {
+        const row = event.target.closest('tr');
+        const sessionStartSelect = row.querySelector('.session-start');
+        const sessionEndSelect = row.querySelector('.session-end');
+        const selectedStartTime = sessionStartSelect.value;
+
+        if (!selectedStartTime) {
+            // No start time selected, enable all options in end time select
+            Array.from(sessionEndSelect.options).forEach(option => {
+                option.disabled = false;
+            });
+            return;
+        }
+
+        const startTimeMinutes = convertTimeToMinutes(selectedStartTime);
+
+        Array.from(sessionEndSelect.options).forEach(option => {
+            const optionTimeMinutes = convertTimeToMinutes(option.value);
+            if (optionTimeMinutes <= startTimeMinutes) {
+                option.disabled = true;
+            } else {
+                option.disabled = false;
+            }
+        });
+
+        // If the selected end time is invalid, reset it
+        if (sessionEndSelect.value) {
+            const selectedEndTimeMinutes = convertTimeToMinutes(sessionEndSelect.value);
+            if (selectedEndTimeMinutes <= startTimeMinutes) {
+                sessionEndSelect.value = '';
+            }
+        }
+
+        updateCredits();
     }
 
     /**
@@ -187,7 +245,8 @@
      * @returns {string} - Formatted credits string with line breaks.
      */
     function calculateCredits(start, end, location, type, day) {
-        if (!start || !end) return '';
+        if (!start || !end || !location || !day) return '';
+        if (location === 'PBA Canningvale' && !type) return '';
 
         const [startHour, startMinute] = start.split(':').map(Number);
         const [endHour, endMinute] = end.split(':').map(Number);
@@ -368,8 +427,14 @@
             select.addEventListener('change', handleDayOfWeekChange);
         });
 
-        // Session start, end changes
-        document.querySelectorAll('.session-start, .session-end').forEach(select => {
+        // Session start changes
+        document.querySelectorAll('.session-start').forEach(select => {
+            select.removeEventListener('change', handleSessionStartChange);
+            select.addEventListener('change', handleSessionStartChange);
+        });
+
+        // Session end changes
+        document.querySelectorAll('.session-end').forEach(select => {
             select.removeEventListener('change', updateCredits);
             select.addEventListener('change', updateCredits);
         });
@@ -402,6 +467,13 @@
                 </select>
             </td>
             <td>
+                <select name="courtLocation[]" class="court-location" required>
+                    <option value="">Select Location</option>
+                    <option value="PBA Canningvale">PBA Canningvale</option>
+                    <option value="PBA Malaga">PBA Malaga</option>
+                </select>
+            </td>
+            <td>
                 <select name="sessionStart[]" class="session-start" required>
                     <option value="">Select Time</option>
                     <!-- Options will be populated dynamically -->
@@ -411,13 +483,6 @@
                 <select name="sessionEnd[]" class="session-end" required>
                     <option value="">Select Time</option>
                     <!-- Options will be populated dynamically -->
-                </select>
-            </td>
-            <td>
-                <select name="courtLocation[]" class="court-location" required>
-                    <option value="">Select Location</option>
-                    <option value="PBA Canningvale">PBA Canningvale</option>
-                    <option value="PBA Malaga">PBA Malaga</option>
                 </select>
             </td>
             <td>
