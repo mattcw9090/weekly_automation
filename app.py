@@ -55,31 +55,40 @@ def selenium_booking_task_grouped(credits_list):
         driver.delete_all_cookies()
         load_cookies(driver, "google_cookies.json")
         driver.refresh()
+        print("[Main] Loaded Google cookies and refreshed.")
 
         # Load PBA cookies
         driver.get("https://pba.yepbooking.com.au")
         driver.delete_all_cookies()
         load_cookies(driver, "pba_cookies.json")
         driver.refresh()
+        print("[Main] Loaded PBA cookies and refreshed.")
 
-        print("Cookies loaded successfully.")
+        print("[Main] Cookies loaded successfully.")
 
         # Open a new tab for each booking
         for idx, credit in enumerate(credits_list):
             if idx > 0:
                 # Open a new tab
                 driver.execute_script("window.open('');")
+                print(f"[Tab {idx + 1}] Opened a new tab.")
+
             # Switch to the newly opened tab
             driver.switch_to.window(driver.window_handles[idx])
-            print(f"Switched to tab {idx + 1}")
+            print(f"[Tab {idx + 1}] Switched to tab {idx + 1}.")
+
+            # Initialize WebDriverWait for each tab
+            wait = WebDriverWait(driver, 60)  # Increased timeout to handle animations
 
             # Perform booking action in this tab
             try:
+                print(f"[Tab {idx + 1}] Starting booking process for credit amount: ${credit['amount']:.2f}")
+
                 # Navigate to the credit list page
                 driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
-                wait = WebDriverWait(driver, 30)
+                print(f"[Tab {idx + 1}] Navigated to credit list page.")
 
-                # Select the correct credit amount based on price
+                # Wait for the credit select dropdown
                 dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
                 select = Select(dropdown)
                 option_found = False
@@ -104,7 +113,7 @@ def selenium_booking_task_grouped(credits_list):
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentCreditLink[title='Credit top up']"))
                 )
                 credit_top_up_button.click()
-                print(f"[Tab {idx + 1}] Clicked on 'Credit top up'.")
+                print(f"[Tab {idx + 1}] Clicked on 'Credit top up' button.")
 
                 # Select the payment type radio button
                 payment_type_radio = wait.until(
@@ -120,19 +129,63 @@ def selenium_booking_task_grouped(credits_list):
                 pay_now_button.click()
                 print(f"[Tab {idx + 1}] Clicked on 'Pay now' button.")
 
-                # Wait for the "Pay without Link" span element to be visible
+                # Wait for the "Pay without Link" span element to be clickable and click it
                 pay_without_link_button = wait.until(
                     EC.element_to_be_clickable(
                         (By.XPATH, "//span[contains(text(), 'Pay without Link')]")
                     )
                 )
                 pay_without_link_button.click()
+                print(f"[Tab {idx + 1}] Clicked on 'Pay without Link'.")
+
+                time.sleep(5)
+
+                # Now fill the payment form fields
+                # Fill Card Number
+                card_number_field = wait.until(
+                    EC.element_to_be_clickable((By.ID, "cardNumber"))
+                )
+                card_number_field.clear()
+                card_number_field.send_keys("5217295400586768")
+                print(f"[Tab {idx + 1}] Entered card number.")
+
+                # Fill Expiration Date
+                card_expiry_field = wait.until(
+                    EC.element_to_be_clickable((By.ID, "cardExpiry"))
+                )
+                card_expiry_field.clear()
+                card_expiry_field.send_keys("11/26")
+                print(f"[Tab {idx + 1}] Entered card expiration.")
+
+                # Fill CVC
+                card_cvc_field = wait.until(
+                    EC.element_to_be_clickable((By.ID, "cardCvc"))
+                )
+                card_cvc_field.clear()
+                card_cvc_field.send_keys("553")
+                print(f"[Tab {idx + 1}] Entered card CVC.")
+
+                # Fill Billing Name
+                billing_name_field = wait.until(
+                    EC.element_to_be_clickable((By.ID, "billingName"))
+                )
+                billing_name_field.clear()
+                billing_name_field.send_keys("Matthew Chew")
+                print(f"[Tab {idx + 1}] Entered billing name.")
+
+                # Do not click submit yet
+                print(f"[Tab {idx + 1}] Payment form filled. Awaiting submission.")
 
             except Exception as e:
                 print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
 
-        time.sleep(500)
-        print("All tabs processed successfully.")
+        # Keep the browser open indefinitely for manual inspection
+        print("All tabs processed successfully. Browser will remain open for manual inspection.")
+        try:
+            while True:
+                time.sleep(60)  # Keeps the script running indefinitely until manually stopped
+        except KeyboardInterrupt:
+            print("Manual interruption received. Closing browser.")
 
     except Exception as e:
         print(f"An error occurred during grouped booking: {e}")
