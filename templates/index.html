@@ -489,7 +489,7 @@
     }
 
     // Handle "Save Config" button click
-    document.getElementById('saveConfigButton').addEventListener('click', () => {
+    document.getElementById('saveConfigButton').addEventListener('click', async () => {
         const configData = [];
         document.querySelectorAll('#studentTable tbody tr').forEach(row => {
             const studentName = row.querySelector('input[name="studentName[]"]').value;
@@ -511,16 +511,41 @@
         });
 
         const dataStr = JSON.stringify(configData, null, 4);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
 
-        const downloadLink = document.createElement('a');
-        downloadLink.href = url;
-        downloadLink.download = 'config.json';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(url);
+        if ('showSaveFilePicker' in window) {
+            // Use the File System Access API
+            try {
+                const options = {
+                    suggestedName: 'config.json',
+                    types: [
+                        {
+                            description: 'JSON Files',
+                            accept: { 'application/json': ['.json'] },
+                        },
+                    ],
+                };
+                const handle = await window.showSaveFilePicker(options);
+                const writableStream = await handle.createWritable();
+                await writableStream.write(dataStr);
+                await writableStream.close();
+                alert('File saved successfully.');
+            } catch (err) {
+                console.error('File save failed:', err);
+                alert('File save was cancelled or failed.');
+            }
+        } else {
+            // Fallback for browsers that do not support showSaveFilePicker
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = 'config.json';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+        }
     });
 
     // Initialize the form on page load
