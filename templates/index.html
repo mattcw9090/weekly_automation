@@ -3,20 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Price</title>
+    <title>Weekly Manager</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #e9f5e9;
+        }
+
+        /* Input and Select Styles */
+        input[type="text"],
+        input[type="time"],
+        select {
+            width: 100%;
+            padding: 8px 10px;
+            margin: 4px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="time"]:focus,
+        select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        /* Button Styles */
+        button {
+            padding: 8px 16px;
+            margin: 10px 5px 0 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .add-btn {
+            background-color: #4CAF50;
+            color: #fff;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+            color: #fff;
+        }
+
+        .submit-btn {
+            background-color: #008CBA;
+            color: #fff;
+            float: right;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            th {
+                position: relative;
+                padding-left: 50%;
+            }
+
+            th::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                font-weight: bold;
+            }
+
+            td {
+                padding-left: 50%;
+                position: relative;
+            }
+
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                font-weight: bold;
+            }
+        }
+    </style>
+    <script>
+        // Function to toggle Court Type based on Court Location
+        function updateCourtType(select) {
+            const courtTypeCell = select.closest('tr').querySelector('.court-type');
+            const courtTypeSelect = courtTypeCell.querySelector('select');
+
+            if (select.value === 'PBA Canningvale' || select.value === 'PBA Malaga') {
+                courtTypeCell.style.display = 'table-cell';
+                courtTypeSelect.required = true;
+            } else {
+                courtTypeCell.style.display = 'none';
+                courtTypeSelect.required = false;
+                courtTypeSelect.value = ''; // Clear court type selection
+            }
+        }
+
+        // Function to add a new row to the table
+        function addRow() {
+            const tableBody = document.querySelector('table tbody');
+            const rowCount = tableBody.rows.length;
+            const newRow = document.createElement('tr');
+
+            newRow.innerHTML = `
+                <td data-label="Student Name">
+                    <input type="text" name="students[${rowCount}][name]" placeholder="Enter name" required>
+                </td>
+                <td data-label="Session Time">
+                    <input type="time" name="students[${rowCount}][session_time]" required>
+                </td>
+                <td data-label="Court Location">
+                    <select name="students[${rowCount}][court_location]" onchange="updateCourtType(this)" required>
+                        <option value="">-- Choose --</option>
+                        <option value="UWA">UWA</option>
+                        <option value="PBA Redcliffe">PBA Redcliffe</option>
+                        <option value="PBA Canningvale">PBA Canningvale</option>
+                        <option value="PBA Malaga">PBA Malaga</option>
+                        <option value="Kingsway">Kingsway</option>
+                    </select>
+                </td>
+                <td class="court-type" data-label="Court Type" style="display: none;">
+                    <select name="students[${rowCount}][court_type]">
+                        <option value="">-- Choose --</option>
+                        <option value="Hebat Court">Hebat Court</option>
+                        <option value="Super Court">Super Court</option>
+                    </select>
+                </td>
+                <td data-label="Actions">
+                    <button type="button" class="delete-btn" onclick="deleteRow(this)">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(newRow);
+        }
+
+        // Function to delete a row from the table
+        function deleteRow(button) {
+            const row = button.closest('tr');
+            row.remove();
+
+            // Update the names for all remaining rows to maintain correct indexing
+            const tableBody = document.querySelector('table tbody');
+            Array.from(tableBody.rows).forEach((row, index) => {
+                row.querySelectorAll('input, select').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
+                    }
+                });
+            });
+        }
+    </script>
 </head>
 <body>
-    <h1>Select Price</h1>
+    <h1>Weekly Manager</h1>
+
     <form action="/submit" method="POST">
-        <label for="price">Choose a price:</label>
-        <select id="price" name="price">
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
-        <br><br>
-        <button type="submit">Submit</button>
+        <table>
+            <thead>
+                <tr>
+                    <th data-label="Student Name">Student Name</th>
+                    <th data-label="Session Time">Session Time</th>
+                    <th data-label="Court Location">Court Location</th>
+                    <th class="court-type" data-label="Court Type">Court Type</th>
+                    <th data-label="Actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Initial row -->
+                <tr>
+                    <td data-label="Student Name">
+                        <input type="text" name="students[0][name]" placeholder="Enter name" required>
+                    </td>
+                    <td data-label="Session Time">
+                        <input type="time" name="students[0][session_time]" required>
+                    </td>
+                    <td data-label="Court Location">
+                        <select name="students[0][court_location]" onchange="updateCourtType(this)" required>
+                            <option value="">-- Choose --</option>
+                            <option value="UWA">UWA</option>
+                            <option value="PBA Redcliffe">PBA Redcliffe</option>
+                            <option value="PBA Canningvale">PBA Canningvale</option>
+                            <option value="PBA Malaga">PBA Malaga</option>
+                            <option value="Kingsway">Kingsway</option>
+                        </select>
+                    </td>
+                    <td class="court-type" data-label="Court Type" style="display: none;">
+                        <select name="students[0][court_type]">
+                            <option value="">-- Choose --</option>
+                            <option value="Hebat Court">Hebat Court</option>
+                            <option value="Super Court">Super Court</option>
+                        </select>
+                    </td>
+                    <td data-label="Actions">
+                        <button type="button" class="delete-btn" onclick="deleteRow(this)">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <button type="button" class="add-btn" onclick="addRow()">Add Row</button>
+        <button type="submit" class="submit-btn">Submit</button>
+        <div style="clear: both;"></div>
     </form>
 </body>
 </html>

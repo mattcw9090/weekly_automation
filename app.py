@@ -12,6 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 app = Flask(__name__)
 
+
 # Function to load cookies from a file
 def load_cookies(driver, cookie_file):
     with open(cookie_file, "r") as file:
@@ -30,16 +31,17 @@ def load_cookies(driver, cookie_file):
         # Add the cookie to the browser
         driver.add_cookie(cookie)
 
+
 @app.route('/')
 def index():
     return render_template('index.html')  # Assumes index.html is in the templates folder
+
 
 @app.route('/submit', methods=['POST'])
 def submit():
     selected_price = request.form.get('price')  # Get user-selected price from the form
     print(f"Selected price: {selected_price}")
 
-    # Retain existing Selenium logic
     # Set up Chrome options
     chrome_options = Options()
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -74,16 +76,19 @@ def submit():
         # Step 4: Select the price from the dropdown
         print("Selecting price from dropdown...")
         wait = WebDriverWait(driver, 10)
-        dropdown = wait.until(EC.presence_of_element_located((By.ID, "price-dropdown")))  # Replace with actual dropdown ID
+        dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
         select = Select(dropdown)
         select.select_by_value(selected_price)  # Use the value from the form
         print("Price selected successfully!")
+
+        time.sleep(50000)
 
     finally:
         driver.quit()
         print("Browser closed.")
 
     return f"Price {selected_price} has been processed successfully!"
+
 
 if __name__ == '__main__':
     app.run(debug=True)
