@@ -58,62 +58,63 @@
     </form>
 
     <script>
-    // Function to convert time string to minutes
+    // Utility function to convert time string to minutes
     function convertTimeToMinutes(timeStr) {
         const [hourStr, minuteStr] = timeStr.split(':');
-        const hour = parseInt(hourStr, 10);
-        const minute = parseInt(minuteStr, 10);
-        return hour * 60 + minute;
+        return parseInt(hourStr, 10) * 60 + parseInt(minuteStr, 10);
     }
 
-    // Function to generate time options based on location and day
-    function generateTimeOptions(location, day) {
-        let openingTime = 0;
-        let closingTime = 0;
-
-        // Define opening and closing times based on location and day
-        if (location === 'PBA Malaga') {
-            if (['Saturday', 'Sunday'].includes(day)) {
-                openingTime = 9;
-                closingTime = 22;
-            } else { // Weekdays
-                openingTime = 13;
-                closingTime = 22;
-            }
-        } else if (location === 'PBA Canningvale') {
-            if (day === 'Sunday') {
-                openingTime = 9;
-                closingTime = 20;
-            } else if (day === 'Saturday') {
-                openingTime = 9;
-                closingTime = 22;
-            } else { // Weekdays
-                openingTime = 10;
-                closingTime = 22;
-            }
+    // Data for opening and closing times based on location and day
+    const locationSchedule = {
+        'PBA Malaga': {
+            weekdays: { opening: 13, closing: 22 },
+            weekend: { opening: 9, closing: 22 }
+        },
+        'PBA Canningvale': {
+            weekdays: { opening: 10, closing: 22 },
+            saturday: { opening: 9, closing: 22 },
+            sunday: { opening: 9, closing: 20 }
         }
+    };
 
-        const options = [];
-        for (let h = openingTime; h <= closingTime; h++) {
+    // Function to get opening and closing times
+    function getOpeningClosingTimes(location, day) {
+        const isWeekend = ['Saturday', 'Sunday'].includes(day);
+        const schedule = locationSchedule[location];
+
+        if (location === 'PBA Malaga') {
+            return isWeekend ? schedule.weekend : schedule.weekdays;
+        } else if (location === 'PBA Canningvale') {
+            if (day === 'Saturday') return schedule.saturday;
+            if (day === 'Sunday') return schedule.sunday;
+            return schedule.weekdays;
+        }
+        return { opening: 0, closing: 0 };
+    }
+
+    // Function to generate time options
+    function generateTimeOptions(location, day) {
+        const { opening, closing } = getOpeningClosingTimes(location, day);
+        let options = '';
+
+        for (let h = opening; h <= closing; h++) {
             for (let m = 0; m < 60; m += 30) {
-                if (h === closingTime && m > 0) break;
-
-                const hour = h % 12 === 0 ? 12 : h % 12;
+                if (h === closing && m > 0) break;
+                const hour12 = h % 12 || 12;
                 const minute = m.toString().padStart(2, '0');
                 const period = h < 12 ? 'AM' : 'PM';
-                const timeLabel = `${hour}:${minute} ${period}`;
+                const timeLabel = `${hour12}:${minute} ${period}`;
                 const timeValue = `${h.toString().padStart(2, '0')}:${minute}`;
-                options.push(`<option value="${timeValue}">${timeLabel}</option>`);
+                options += `<option value="${timeValue}">${timeLabel}</option>`;
             }
         }
-        return options.join('');
+        return options;
     }
 
     // Function to populate time dropdowns
     function populateTimeDropdowns(row, selectedStartTime = '', selectedEndTime = '') {
         const location = row.querySelector('.court-location').value;
         const day = row.querySelector('.day-of-week').value;
-
         const sessionStartSelect = row.querySelector('.session-start');
         const sessionEndSelect = row.querySelector('.session-end');
 
@@ -124,19 +125,12 @@
         }
 
         const timeOptions = generateTimeOptions(location, day);
-
         sessionStartSelect.innerHTML = '<option value="">Select Time</option>' + timeOptions;
         sessionEndSelect.innerHTML = '<option value="">Select Time</option>' + timeOptions;
 
-        // Set the selected values if provided
-        if (selectedStartTime) {
-            sessionStartSelect.value = selectedStartTime;
-        }
-        if (selectedEndTime) {
-            sessionEndSelect.value = selectedEndTime;
-        }
+        if (selectedStartTime) sessionStartSelect.value = selectedStartTime;
+        if (selectedEndTime) sessionEndSelect.value = selectedEndTime;
 
-        // Update end time options based on start time
         handleSessionStartChange({ target: sessionStartSelect });
     }
 
@@ -148,9 +142,7 @@
         const selectedStartTime = sessionStartSelect.value;
 
         if (!selectedStartTime) {
-            Array.from(sessionEndSelect.options).forEach(option => {
-                option.disabled = false;
-            });
+            Array.from(sessionEndSelect.options).forEach(option => option.disabled = false);
             return;
         }
 
@@ -158,18 +150,11 @@
 
         Array.from(sessionEndSelect.options).forEach(option => {
             const optionTimeMinutes = convertTimeToMinutes(option.value);
-            if (optionTimeMinutes <= startTimeMinutes) {
-                option.disabled = true;
-            } else {
-                option.disabled = false;
-            }
+            option.disabled = optionTimeMinutes <= startTimeMinutes;
         });
 
-        if (sessionEndSelect.value) {
-            const selectedEndTimeMinutes = convertTimeToMinutes(sessionEndSelect.value);
-            if (selectedEndTimeMinutes <= startTimeMinutes) {
-                sessionEndSelect.value = '';
-            }
+        if (sessionEndSelect.value && convertTimeToMinutes(sessionEndSelect.value) <= startTimeMinutes) {
+            sessionEndSelect.value = '';
         }
 
         updateCredits();
@@ -180,69 +165,43 @@
         if (!start || !end || !location || !day) return '';
         if (location === 'PBA Canningvale' && !type) return '';
 
-        const [startHour, startMinute] = start.split(':').map(Number);
-        const [endHour, endMinute] = end.split(':').map(Number);
-
-        const startTotalMinutes = startHour * 60 + startMinute;
-        const endTotalMinutes = endHour * 60 + endMinute;
+        const startTotalMinutes = convertTimeToMinutes(start);
+        const endTotalMinutes = convertTimeToMinutes(end);
 
         if (endTotalMinutes <= startTotalMinutes) return '';
 
         let credits = [];
+        const rateChangePoints = [];
 
-        let rateChangePoints = [];
-
-        if (location === 'PBA Malaga') {
-            if (!['Saturday', 'Sunday'].includes(day)) {
-                rateChangePoints.push(17 * 60); // 5 PM
-            }
-        } else if (location === 'PBA Canningvale') {
+        if (location === 'PBA Malaga' || location === 'PBA Canningvale') {
             if (!['Saturday', 'Sunday'].includes(day)) {
                 rateChangePoints.push(17 * 60); // 5 PM
             }
         }
 
-        rateChangePoints = [...new Set(rateChangePoints)].sort((a, b) => a - b);
         rateChangePoints.push(endTotalMinutes);
+        rateChangePoints.sort((a, b) => a - b);
 
         let currentStart = startTotalMinutes;
-        let currentEnd;
 
         while (currentStart < endTotalMinutes) {
-            let nextChange = rateChangePoints.find(point => point > currentStart);
-            if (!nextChange) {
-                nextChange = endTotalMinutes;
-            }
-
-            currentEnd = Math.min(nextChange, endTotalMinutes);
-
-            const isWeekend = (day === 'Saturday' || day === 'Sunday');
-            const isAfter5PM = currentStart >= 17 * 60;
-            const isWeekendOrAfter5PM = isWeekend || isAfter5PM;
+            const nextChange = rateChangePoints.find(point => point > currentStart) || endTotalMinutes;
+            const currentEnd = Math.min(nextChange, endTotalMinutes);
+            const isWeekendOrAfter5PM = ['Saturday', 'Sunday'].includes(day) || currentStart >= 17 * 60;
 
             let ratePerHour = 0;
             if (location === 'PBA Malaga') {
                 ratePerHour = isWeekendOrAfter5PM ? 29 : 19;
             } else if (location === 'PBA Canningvale') {
-                if (type === 'Hebat Court') {
-                    ratePerHour = isWeekendOrAfter5PM ? 26 : 16;
-                } else if (type === 'Super Court') {
-                    ratePerHour = isWeekendOrAfter5PM ? 29 : 19;
-                }
+                ratePerHour = (type === 'Hebat Court') ? (isWeekendOrAfter5PM ? 26 : 16) : (isWeekendOrAfter5PM ? 29 : 19);
             }
 
-            let durationMinutes = currentEnd - currentStart;
-            let fullHours = Math.floor(durationMinutes / 60);
-            let halfHours = Math.floor((durationMinutes % 60) / 30);
+            const durationMinutes = currentEnd - currentStart;
+            const fullHours = Math.floor(durationMinutes / 60);
+            const halfHours = (durationMinutes % 60) / 30;
 
-            if (fullHours > 0) {
-                credits.push(`${fullHours}x $${ratePerHour.toFixed(2)}`);
-            }
-
-            if (halfHours > 0) {
-                const halfHourRate = (ratePerHour / 2).toFixed(2);
-                credits.push(`1x $${halfHourRate}`);
-            }
+            if (fullHours > 0) credits.push(`${fullHours}x $${ratePerHour.toFixed(2)}`);
+            if (halfHours > 0) credits.push(`1x $${(ratePerHour / 2).toFixed(2)}`);
 
             currentStart = currentEnd;
         }
@@ -296,41 +255,41 @@
     }
 
     // Handle court type change
-    function handleCourtTypeChange(event) {
+    function handleCourtTypeChange() {
         updateCredits();
     }
 
-    // Update event listeners
+    // Update event listeners using event delegation
     function updateEventListeners() {
-        document.querySelectorAll('.delete-row').forEach(button => {
-            button.removeEventListener('click', deleteRow);
-            button.addEventListener('click', deleteRow);
-        });
+        const tableBody = document.querySelector('#studentTable tbody');
 
-        document.querySelectorAll('.court-location').forEach(select => {
-            select.removeEventListener('change', handleCourtLocationChange);
-            select.addEventListener('change', handleCourtLocationChange);
-        });
+        tableBody.removeEventListener('click', tableBodyClickHandler);
+        tableBody.addEventListener('click', tableBodyClickHandler);
 
-        document.querySelectorAll('.day-of-week').forEach(select => {
-            select.removeEventListener('change', handleDayOfWeekChange);
-            select.addEventListener('change', handleDayOfWeekChange);
-        });
+        tableBody.removeEventListener('change', tableBodyChangeHandler);
+        tableBody.addEventListener('change', tableBodyChangeHandler);
+    }
 
-        document.querySelectorAll('.session-start').forEach(select => {
-            select.removeEventListener('change', handleSessionStartChange);
-            select.addEventListener('change', handleSessionStartChange);
-        });
+    // Event delegation for click events in the table body
+    function tableBodyClickHandler(event) {
+        if (event.target.classList.contains('delete-row')) {
+            deleteRow(event);
+        }
+    }
 
-        document.querySelectorAll('.session-end').forEach(select => {
-            select.removeEventListener('change', updateCredits);
-            select.addEventListener('change', updateCredits);
-        });
-
-        document.querySelectorAll('.court-type').forEach(select => {
-            select.removeEventListener('change', handleCourtTypeChange);
-            select.addEventListener('change', handleCourtTypeChange);
-        });
+    // Event delegation for change events in the table body
+    function tableBodyChangeHandler(event) {
+        if (event.target.classList.contains('court-location')) {
+            handleCourtLocationChange(event);
+        } else if (event.target.classList.contains('day-of-week')) {
+            handleDayOfWeekChange(event);
+        } else if (event.target.classList.contains('session-start')) {
+            handleSessionStartChange(event);
+        } else if (event.target.classList.contains('session-end')) {
+            updateCredits();
+        } else if (event.target.classList.contains('court-type')) {
+            handleCourtTypeChange();
+        }
     }
 
     // Add new row
@@ -385,9 +344,7 @@
             <td><button type="button" class="delete-row">Delete</button></td>
         `;
         tableBody.appendChild(newRow);
-        const lastRow = tableBody.lastElementChild;
-        populateTimeDropdowns(lastRow);
-        updateEventListeners();
+        populateTimeDropdowns(newRow);
         updateCredits();
     });
 
@@ -571,8 +528,8 @@
 
     // Initialize the form on page load
     document.addEventListener('DOMContentLoaded', () => {
-        // Add an empty row by default
         document.getElementById('addRow').click();
+        updateEventListeners();
     });
     </script>
 
