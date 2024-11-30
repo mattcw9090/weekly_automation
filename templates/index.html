@@ -16,9 +16,14 @@
         th, td {
             padding: 10px;
             text-align: left;
+            vertical-align: top;
         }
         .hidden {
             display: none;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 2px;
         }
     </style>
 </head>
@@ -87,6 +92,7 @@
     </form>
 
     <script>
+    // Function to generate time options from 6:00 AM to 9:00 PM in 30-minute intervals
     function generateTimeOptions() {
         const options = [];
         for (let h = 6; h <= 21; h++) { // Start at 6 AM (6) and include up to 9 PM (21)
@@ -105,13 +111,126 @@
         return options.join('');
     }
 
-    function populateTimeDropdowns() {
+    // Function to populate session start and end dropdowns with time options
+    function populateTimeDropdowns(row) {
         const timeOptions = generateTimeOptions();
-        document.querySelectorAll('select[name="sessionStart[]"], select[name="sessionEnd[]"]').forEach(select => {
-            select.innerHTML = timeOptions;
+        const sessionStartSelect = row.querySelector('select[name="sessionStart[]"]');
+        const sessionEndSelect = row.querySelector('select[name="sessionEnd[]"]');
+        sessionStartSelect.innerHTML = timeOptions;
+        sessionEndSelect.innerHTML = timeOptions;
+    }
+
+    // Function to calculate credits based on session details
+    function calculateCredits(start, end, location, type, day) {
+        if (!start || !end) return '';
+
+        const [startHour, startMinute] = start.split(':').map(Number);
+        const [endHour, endMinute] = end.split(':').map(Number);
+
+        let totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+        if (totalMinutes <= 0) return '';
+
+        let credits = [];
+        const hours = Math.floor(totalMinutes / 60);
+        const halfHours = Math.floor((totalMinutes % 60) / 30);
+
+        function getPrice(location, type, isWeekendOrAfter5PM) {
+            if (location === 'PBA Redcliffe') {
+                return isWeekendOrAfter5PM ? 25 : 15;
+            } else if (location === 'PBA Canningvale') {
+                if (type === 'Hebat Court') {
+                    return isWeekendOrAfter5PM ? 26 : 16;
+                } else if (type === 'Super Court') {
+                    return isWeekendOrAfter5PM ? 29 : 19;
+                }
+            } else if (location === 'PBA Malaga') {
+                return isWeekendOrAfter5PM ? 29 : 19;
+            }
+            return 0;
+        }
+
+        const isWeekend = (day === 'Saturday' || day === 'Sunday');
+        const isAfter5PM = startHour >= 17;
+        const isWeekendOrAfter5PM = isWeekend || isAfter5PM;
+        const pricePerHour = getPrice(location, type, isWeekendOrAfter5PM);
+
+        if (hours > 0) {
+            credits.push(`${hours}x $${pricePerHour.toFixed(2)}`);
+        }
+        if (halfHours > 0) {
+            credits.push(`${halfHours}x $${(pricePerHour / 2).toFixed(2)}`);
+        }
+
+        // Check if all credits are $0.00, if so, return an empty string
+        if (credits.every(line => line.includes('$0.00'))) {
+            return '';
+        }
+
+        return credits.join('<br>');
+    }
+
+    // Function to update the credits for all rows
+    function updateCredits() {
+        document.querySelectorAll('#studentTable tbody tr').forEach(row => {
+            const start = row.querySelector('.session-start').value;
+            const end = row.querySelector('.session-end').value;
+            const location = row.querySelector('.court-location').value;
+            const type = row.querySelector('.court-type').value;
+            const day = row.querySelector('.day-of-week').value;
+            const creditsCell = row.querySelector('.credits-to-book');
+            creditsCell.innerHTML = calculateCredits(start, end, location, type, day);
         });
     }
 
+    // Function to add event listeners to dynamic elements
+    function updateEventListeners() {
+        // Delete row buttons
+        document.querySelectorAll('.delete-row').forEach(button => {
+            button.removeEventListener('click', deleteRow); // Prevent duplicate listeners
+            button.addEventListener('click', deleteRow);
+        });
+
+        // Court location change
+        document.querySelectorAll('.court-location').forEach(select => {
+            select.removeEventListener('change', handleCourtLocationChange); // Prevent duplicate listeners
+            select.addEventListener('change', handleCourtLocationChange);
+        });
+
+        // Session start, end, and day of week changes
+        document.querySelectorAll('.session-start, .session-end, .day-of-week').forEach(select => {
+            select.removeEventListener('change', updateCredits);
+            select.addEventListener('change', updateCredits);
+        });
+
+        // Court type changes
+        document.querySelectorAll('.court-type').forEach(select => {
+            select.removeEventListener('change', updateCredits);
+            select.addEventListener('change', updateCredits);
+        });
+    }
+
+    // Handler for deleting a row
+    function deleteRow(event) {
+        event.target.closest('tr').remove();
+        updateCredits();
+    }
+
+    // Handler for court location changes
+    function handleCourtLocationChange(event) {
+        const row = event.target.closest('tr');
+        const courtTypeSelect = row.querySelector('.court-type');
+        if (event.target.value === 'PBA Canningvale') {
+            courtTypeSelect.classList.remove('hidden');
+            courtTypeSelect.setAttribute('required', 'required');
+        } else {
+            courtTypeSelect.classList.add('hidden');
+            courtTypeSelect.removeAttribute('required');
+            courtTypeSelect.value = '';
+        }
+        updateCredits();
+    }
+
+    // Event listener for adding a new row
     document.getElementById('addRow').addEventListener('click', () => {
         const tableBody = document.querySelector('#studentTable tbody');
         const newRow = document.createElement('tr');
@@ -157,105 +276,20 @@
             <td><button type="button" class="delete-row">Delete</button></td>
         `;
         tableBody.appendChild(newRow);
-        populateTimeDropdowns();
+        populateTimeDropdowns(newRow);
         updateEventListeners();
+        updateCredits();
     });
 
-    function calculateCredits(start, end, location, type, day) {
-        if (!start || !end) return '';
-
-        const [startHour, startMinute] = start.split(':').map(Number);
-        const [endHour, endMinute] = end.split(':').map(Number);
-
-        let totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-        if (totalMinutes <= 0) return '';
-
-        let credits = '';
-        const hours = Math.floor(totalMinutes / 60);
-        const halfHours = (totalMinutes % 60) / 30;
-
-        function getPrice(location, type, hour, isWeekendOrAfter5PM) {
-            if (location === 'PBA Redcliffe') {
-                return isWeekendOrAfter5PM ? 25 : 15;
-            } else if (location === 'PBA Canningvale') {
-                if (type === 'Hebat Court') {
-                    return isWeekendOrAfter5PM ? 26 : 16;
-                } else if (type === 'Super Court') {
-                    return isWeekendOrAfter5PM ? 29 : 19;
-                }
-            } else if (location === 'PBA Malaga') {
-                return isWeekendOrAfter5PM ? 29 : 19;
-            }
-            return 0;
-        }
-
-        const isWeekend = (day === 'Saturday' || day === 'Sunday');
-        const isAfter5PM = startHour >= 17;
-        const isWeekendOrAfter5PM = isWeekend || isAfter5PM;
-        const pricePerHour = getPrice(location, type, startHour, isWeekendOrAfter5PM);
-
-        if (hours > 0) {
-            credits += `${hours}x $${(pricePerHour).toFixed(2)}\n`;
-        }
-        if (halfHours > 0) {
-            credits += `${halfHours}x $${(pricePerHour / 2).toFixed(2)}`;
-        }
-
-        // Check if all credits are $0.00, if so, return an empty string
-        if (credits.split('\n').every(line => line.includes('$0.00'))) {
-            return '';
-        }
-
-        return credits;
-    }
-
-    function updateCredits() {
+    // Initial population of time dropdowns and event listeners
+    document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#studentTable tbody tr').forEach(row => {
-            const start = row.querySelector('.session-start').value;
-            const end = row.querySelector('.session-end').value;
-            const location = row.querySelector('.court-location').value;
-            const type = row.querySelector('.court-type').value;
-            const day = row.querySelector('.day-of-week').value;
-            const creditsCell = row.querySelector('.credits-to-book');
-            creditsCell.textContent = calculateCredits(start, end, location, type, day);
+            populateTimeDropdowns(row);
         });
-    }
-
-    function updateEventListeners() {
-        document.querySelectorAll('.delete-row').forEach(button => {
-            button.addEventListener('click', (event) => {
-                event.target.closest('tr').remove();
-                updateCredits();
-            });
-        });
-
-        document.querySelectorAll('.court-location').forEach(select => {
-            select.addEventListener('change', (event) => {
-                const courtType = event.target.closest('tr').querySelector('.court-type');
-                if (event.target.value === 'PBA Canningvale') {
-                    courtType.classList.remove('hidden');
-                    courtType.setAttribute('required', 'required');
-                } else {
-                    courtType.classList.add('hidden');
-                    courtType.removeAttribute('required');
-                    courtType.value = '';
-                }
-                updateCredits();
-            });
-        });
-
-        document.querySelectorAll('.session-start, .session-end, .day-of-week').forEach(select => {
-            select.addEventListener('change', updateCredits);
-        });
-
-        document.querySelectorAll('.court-type').forEach(select => {
-            select.addEventListener('change', updateCredits);
-        });
-    }
-
-    populateTimeDropdowns();
-    updateEventListeners();
-</script>
+        updateEventListeners();
+        updateCredits();
+    });
+    </script>
 
 </body>
 </html>
