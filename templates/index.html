@@ -382,6 +382,55 @@
         reader.readAsText(file);
     }
 
+    // Event delegation for click events in the table body
+    function tableBodyClickHandler(event) {
+        if (event.target.classList.contains('delete-row')) {
+            deleteRow(event);
+        } else if (event.target.classList.contains('message-button')) {
+            alert('Message sent to student.');
+        } else if (event.target.classList.contains('book-button')) {
+            const row = event.target.closest('tr');
+            const creditsCell = row.querySelector('.credits-to-book');
+            const creditsToBook = creditsCell.innerHTML;
+
+            // Get other data if needed
+            const studentName = row.querySelector('.student-name').value;
+            const dayOfWeek = row.querySelector('.day-of-week').value;
+            const courtLocation = row.querySelector('.court-location').value;
+            const courtType = row.querySelector('.court-type').value;
+            const sessionStart = row.querySelector('.session-start').value;
+            const sessionEnd = row.querySelector('.session-end').value;
+
+            // Prepare the data to send to the server
+            const data = {
+                studentName,
+                dayOfWeek,
+                courtLocation,
+                courtType,
+                sessionStart,
+                sessionEnd,
+                creditsToBook
+            };
+
+            // Send the data to the server via POST request
+            fetch('/book', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.text())
+            .then(result => {
+                alert(result); // Display server response
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while booking the session.');
+            });
+        }
+    }
+
     // Prefill the form with data from the configuration file
     function prefillForm(data) {
         // Set the week starting date

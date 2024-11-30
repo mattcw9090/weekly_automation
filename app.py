@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import json
 import time
+import re
+import threading
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -11,7 +13,6 @@ from selenium.webdriver.support.ui import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
 app = Flask(__name__)
-
 
 # Function to load cookies from a file
 def load_cookies(driver, cookie_file):
@@ -29,66 +30,122 @@ def load_cookies(driver, cookie_file):
                 del cookie['sameSite']
 
         # Add the cookie to the browser
-        driver.add_cookie(cookie)
-
+        try:
+            driver.add_cookie(cookie)
+        except Exception as e:
+            print(f"Error adding cookie: {e}")
 
 @app.route('/')
 def index():
     return render_template('index.html')  # Assumes index.html is in the templates folder
 
+@app.route('/book', methods=['POST'])
+def book():
+    data = request.get_json()
+    if not data:
+        return "Invalid data received.", 400
 
-@app.route('/submit', methods=['POST'])
-def submit():
-    selected_price = request.form.get('price')  # Get user-selected price from the form
-    print(f"Selected price: {selected_price}")
+    # Extract data from the request
+    studentName = data.get('studentName')
+    dayOfWeek = data.get('dayOfWeek')
+    courtLocation = data.get('courtLocation')
+    courtType = data.get('courtType')
+    sessionStart = data.get('sessionStart')
+    sessionEnd = data.get('sessionEnd')
+    creditsToBook = data.get('creditsToBook')
 
-    # Set up Chrome options
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--disable-infobars")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    # For debugging purposes, print the received data
+    print("Received booking request for:")
+    print(f"Student Name: {studentName}")
+    print(f"Day of Week: {dayOfWeek}")
+    print(f"Court Location: {courtLocation}")
+    print(f"Court Type: {courtType}")
+    print(f"Session Start: {sessionStart}")
+    print(f"Session End: {sessionEnd}")
+    print(f"Credits to Book: {creditsToBook}")
 
-    # Initialize the Chrome driver
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    # Parse the credits to book
+    credits_lines = re.sub(r'<[^>]*>', '\n', creditsToBook).split('\n')
 
-    try:
-        # Step 1: Load Google cookies
-        print("Loading Google cookies...")
-        driver.get("https://www.google.com")  # Navigate to Google's domain to set context
-        driver.delete_all_cookies()  # Clear any existing cookies
-        load_cookies(driver, "google_cookies.json")
-        driver.refresh()  # Refresh to apply cookies
-        print("Google cookies loaded successfully!")
+    credits_list = []
+    for line in credits_lines:
+        match = re.match(r'(\d+)x \$([\d.]+)', line.strip())
+        if match:
+            times = int(match.group(1))
+            amount = float(match.group(2))
+            credits_list.append({'times': times, 'amount': amount})
+        else:
+            print(f"Could not parse line: {line.strip()}")
 
-        # Step 2: Load PBA cookies
-        print("Loading PBA cookies...")
-        driver.get("https://pba.yepbooking.com.au")  # Navigate to PBA's domain to set context
-        driver.delete_all_cookies()  # Clear any existing cookies
-        load_cookies(driver, "pba_cookies.json")
-        driver.refresh()  # Refresh to apply cookies
-        print("PBA cookies loaded successfully!")
+    def selenium_task(credits_list):
+        # Set up Selenium
+        chrome_options = Options()
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--disable-infobars")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        # Uncomment the next line to run headless (without opening a browser window)
+        # chrome_options.add_argument("--headless")
 
-        # Step 3: Navigate to credit list page
-        print("Navigating to credit list page...")
-        driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-        # Step 4: Select the price from the dropdown
-        print("Selecting price from dropdown...")
-        wait = WebDriverWait(driver, 10)
-        dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
-        select = Select(dropdown)
-        select.select_by_value(selected_price)  # Use the value from the form
-        print("Price selected successfully!")
+        try:
+            # Load cookies
+            print("Loading cookies...")
+            driver.get("https://www.google.com")
+            driver.delete_all_cookies()
+            load_cookies(driver, "google_cookies.json")
+            driver.refresh()
+            driver.get("https://pba.yepbooking.com.au")
+            driver.delete_all_cookies()
+            load_cookies(driver, "pba_cookies.json")
+            driver.refresh()
+            print("Cookies loaded successfully!")
 
-        time.sleep(50000)
+            # Automate booking for each credit
+            for credit in credits_list:
+                times = credit['times']
+                amount = credit['amount']
+                print(f"Booking {times} times of amount ${amount:.2f}")
 
-    finally:
-        driver.quit()
-        print("Browser closed.")
+                for _ in range(times):
+                    # Navigate to the credit list page
+                    driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
+                    wait = WebDriverWait(driver, 10)
+                    dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
+                    select = Select(dropdown)
 
-    return f"Price {selected_price} has been processed successfully!"
+                    # Select the correct credit amount based on price only
+                    option_found = False
+                    for option in select.options:
+                        # Extract the price from the option text
+                        option_text = option.text
+                        price_match = re.search(r'Price: \$([\d.]+)', option_text)
+                        if price_match:
+                            option_price = float(price_match.group(1))
+                            # Compare the price
+                            if option_price == amount:
+                                select.select_by_value(option.get_attribute('value'))
+                                option_found = True
+                                print(f"Selected option: {option_text}")
+                                break
+                    if not option_found:
+                        print(f"Could not find option for amount ${amount:.2f}")
+                        continue
 
+                    time.sleep(200)
+
+            print("All credits booked successfully.")
+        except Exception as e:
+            print(f"An error occurred during booking: {e}")
+        finally:
+            driver.quit()
+            print("Browser closed.")
+
+    # Start the Selenium task in a new thread to avoid blocking the main thread
+    threading.Thread(target=selenium_task, args=(credits_list,)).start()
+
+    return f"Booking for {studentName} is being processed in the background!"
 
 if __name__ == '__main__':
     app.run(debug=True)
