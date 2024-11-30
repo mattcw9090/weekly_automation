@@ -123,6 +123,7 @@ def selenium_booking_task_grouped(credits_list):
             except Exception as e:
                 print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
 
+        time.sleep(500)
         print("All tabs processed successfully.")
 
     except Exception as e:
