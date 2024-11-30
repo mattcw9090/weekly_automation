@@ -48,6 +48,7 @@
                     <td><input type="text" name="studentName[]" required></td>
                     <td>
                         <select name="dayOfWeek[]" class="day-of-week" required>
+                            <option value="">Select Day</option>
                             <option value="Monday">Monday</option>
                             <option value="Tuesday">Tuesday</option>
                             <option value="Wednesday">Wednesday</option>
@@ -59,18 +60,19 @@
                     </td>
                     <td>
                         <select name="sessionStart[]" class="session-start" required>
+                            <option value="">Select Time</option>
                             <!-- Options will be populated dynamically -->
                         </select>
                     </td>
                     <td>
                         <select name="sessionEnd[]" class="session-end" required>
+                            <option value="">Select Time</option>
                             <!-- Options will be populated dynamically -->
                         </select>
                     </td>
                     <td>
                         <select name="courtLocation[]" class="court-location" required>
                             <option value="">Select Location</option>
-                            <option value="PBA Redcliffe">PBA Redcliffe</option>
                             <option value="PBA Canningvale">PBA Canningvale</option>
                             <option value="PBA Malaga">PBA Malaga</option>
                         </select>
@@ -92,13 +94,43 @@
     </form>
 
     <script>
-    // Function to generate time options from 6:00 AM to 9:00 PM in 30-minute intervals
-    function generateTimeOptions() {
+    /**
+     * Generates time options based on location and day.
+     * @param {string} location - The court location.
+     * @param {string} day - The day of the week.
+     * @returns {string} - HTML string of option elements.
+     */
+    function generateTimeOptions(location, day) {
+        let openingTime = 0;
+        let closingTime = 0;
+
+        // Define opening and closing times based on location and day
+        if (location === 'PBA Malaga') {
+            if (['Saturday', 'Sunday'].includes(day)) {
+                openingTime = 9;
+                closingTime = 22;
+            } else { // Weekdays
+                openingTime = 13;
+                closingTime = 22;
+            }
+        } else if (location === 'PBA Canningvale') {
+            if (day === 'Sunday') {
+                openingTime = 9;
+                closingTime = 20;
+            } else if (day === 'Saturday') {
+                openingTime = 9;
+                closingTime = 22;
+            } else { // Weekdays
+                openingTime = 10;
+                closingTime = 22;
+            }
+        }
+
         const options = [];
-        for (let h = 6; h <= 21; h++) { // Start at 6 AM (6) and include up to 9 PM (21)
+        for (let h = openingTime; h <= closingTime; h++) {
             for (let m = 0; m < 60; m += 30) {
-                // Stop at 9:00 PM
-                if (h === 21 && m > 0) break;
+                // Stop at the closing hour if minutes exceed
+                if (h === closingTime && m > 0) break;
 
                 const hour = h % 12 === 0 ? 12 : h % 12;
                 const minute = m.toString().padStart(2, '0');
@@ -111,65 +143,145 @@
         return options.join('');
     }
 
-    // Function to populate session start and end dropdowns with time options
+    /**
+     * Populates session start and end dropdowns based on location and day.
+     * @param {HTMLElement} row - The table row element.
+     */
     function populateTimeDropdowns(row) {
-        const timeOptions = generateTimeOptions();
-        const sessionStartSelect = row.querySelector('select[name="sessionStart[]"]');
-        const sessionEndSelect = row.querySelector('select[name="sessionEnd[]"]');
-        sessionStartSelect.innerHTML = timeOptions;
-        sessionEndSelect.innerHTML = timeOptions;
+        const location = row.querySelector('.court-location').value;
+        const day = row.querySelector('.day-of-week').value;
+
+        if (!location || !day) {
+            row.querySelector('.session-start').innerHTML = '<option value="">Select Time</option>';
+            row.querySelector('.session-end').innerHTML = '<option value="">Select Time</option>';
+            return;
+        }
+
+        const timeOptions = generateTimeOptions(location, day);
+        const sessionStartSelect = row.querySelector('.session-start');
+        const sessionEndSelect = row.querySelector('.session-end');
+
+        // Store the previously selected values
+        const previousStart = sessionStartSelect.value;
+        const previousEnd = sessionEndSelect.value;
+
+        sessionStartSelect.innerHTML = '<option value="">Select Time</option>' + timeOptions;
+        sessionEndSelect.innerHTML = '<option value="">Select Time</option>' + timeOptions;
+
+        // Restore previous selections if still valid
+        if (previousStart && sessionStartSelect.querySelector(`option[value="${previousStart}"]`)) {
+            sessionStartSelect.value = previousStart;
+        }
+        if (previousEnd && sessionEndSelect.querySelector(`option[value="${previousEnd}"]`)) {
+            sessionEndSelect.value = previousEnd;
+        }
     }
 
-    // Function to calculate credits based on session details
+    /**
+     * Calculates credits based on session details.
+     * @param {string} start - Session start time in HH:MM format.
+     * @param {string} end - Session end time in HH:MM format.
+     * @param {string} location - Court location.
+     * @param {string} type - Court type.
+     * @param {string} day - Day of the week.
+     * @returns {string} - Formatted credits string with line breaks.
+     */
     function calculateCredits(start, end, location, type, day) {
         if (!start || !end) return '';
 
         const [startHour, startMinute] = start.split(':').map(Number);
         const [endHour, endMinute] = end.split(':').map(Number);
 
-        let totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-        if (totalMinutes <= 0) return '';
+        const startTotalMinutes = startHour * 60 + startMinute;
+        const endTotalMinutes = endHour * 60 + endMinute;
+
+        if (endTotalMinutes <= startTotalMinutes) return '';
 
         let credits = [];
-        const hours = Math.floor(totalMinutes / 60);
-        const halfHours = Math.floor((totalMinutes % 60) / 30);
 
-        function getPrice(location, type, isWeekendOrAfter5PM) {
-            if (location === 'PBA Redcliffe') {
-                return isWeekendOrAfter5PM ? 25 : 15;
+        // Define rate change points based on location and day
+        let rateChangePoints = [];
+
+        if (location === 'PBA Malaga') {
+            if (!['Saturday', 'Sunday'].includes(day)) {
+                // PBA Malaga on weekdays: 1 PM - 10 PM
+                // Rate changes at 5 PM
+                rateChangePoints.push(17 * 60); // 5 PM in minutes
+            }
+            // No rate changes on weekends for PBA Malaga
+        } else if (location === 'PBA Canningvale') {
+            if (!['Saturday', 'Sunday'].includes(day)) {
+                // PBA Canningvale on weekdays: 10 AM - 10 PM
+                // Rate changes at 5 PM
+                rateChangePoints.push(17 * 60); // 5 PM in minutes
+            }
+            // No rate changes on weekends for PBA Canningvale
+        }
+
+        // Sort and remove duplicates
+        rateChangePoints = [...new Set(rateChangePoints)].sort((a, b) => a - b);
+
+        // Add session end as the last point
+        rateChangePoints.push(endTotalMinutes);
+
+        // Initialize
+        let currentStart = startTotalMinutes;
+        let currentEnd;
+
+        while (currentStart < endTotalMinutes) {
+            // Find the next rate change point
+            let nextChange = rateChangePoints.find(point => point > currentStart);
+            if (!nextChange) {
+                nextChange = endTotalMinutes;
+            }
+
+            currentEnd = Math.min(nextChange, endTotalMinutes);
+
+            // Determine if current time is weekend or after 5 PM
+            const isWeekend = (day === 'Saturday' || day === 'Sunday');
+            const isAfter5PM = currentStart >= 17 * 60; // 5 PM in minutes
+            const isWeekendOrAfter5PM = isWeekend || isAfter5PM;
+
+            // Determine rate based on location, type, and time
+            let ratePerHour = 0;
+            if (location === 'PBA Malaga') {
+                ratePerHour = isWeekendOrAfter5PM ? 25 : 15;
             } else if (location === 'PBA Canningvale') {
                 if (type === 'Hebat Court') {
-                    return isWeekendOrAfter5PM ? 26 : 16;
+                    ratePerHour = isWeekendOrAfter5PM ? 26 : 16;
                 } else if (type === 'Super Court') {
-                    return isWeekendOrAfter5PM ? 29 : 19;
+                    ratePerHour = isWeekendOrAfter5PM ? 29 : 19;
                 }
-            } else if (location === 'PBA Malaga') {
-                return isWeekendOrAfter5PM ? 29 : 19;
             }
-            return 0;
-        }
 
-        const isWeekend = (day === 'Saturday' || day === 'Sunday');
-        const isAfter5PM = startHour >= 17;
-        const isWeekendOrAfter5PM = isWeekend || isAfter5PM;
-        const pricePerHour = getPrice(location, type, isWeekendOrAfter5PM);
+            // Calculate duration in minutes
+            let durationMinutes = currentEnd - currentStart;
 
-        if (hours > 0) {
-            credits.push(`${hours}x $${pricePerHour.toFixed(2)}`);
-        }
-        if (halfHours > 0) {
-            credits.push(`${halfHours}x $${(pricePerHour / 2).toFixed(2)}`);
-        }
+            // Calculate number of full hours and half-hours
+            let fullHours = Math.floor(durationMinutes / 60);
+            let halfHours = Math.floor((durationMinutes % 60) / 30);
 
-        // Check if all credits are $0.00, if so, return an empty string
-        if (credits.every(line => line.includes('$0.00'))) {
-            return '';
+            // Add full hours credits
+            if (fullHours > 0) {
+                credits.push(`${fullHours}x $${ratePerHour.toFixed(2)}`);
+            }
+
+            // Add half hour credits
+            if (halfHours > 0) {
+                const halfHourRate = (ratePerHour / 2).toFixed(2);
+                credits.push(`1x $${halfHourRate}`);
+            }
+
+            // Move to next segment
+            currentStart = currentEnd;
         }
 
         return credits.join('<br>');
     }
 
-    // Function to update the credits for all rows
+    /**
+     * Updates the credits for all rows.
+     */
     function updateCredits() {
         document.querySelectorAll('#studentTable tbody tr').forEach(row => {
             const start = row.querySelector('.session-start').value;
@@ -182,7 +294,61 @@
         });
     }
 
-    // Function to add event listeners to dynamic elements
+    /**
+     * Deletes a row from the table.
+     * @param {Event} event - The click event.
+     */
+    function deleteRow(event) {
+        event.target.closest('tr').remove();
+        updateCredits();
+    }
+
+    /**
+     * Handles changes to the court location.
+     * @param {Event} event - The change event.
+     */
+    function handleCourtLocationChange(event) {
+        const row = event.target.closest('tr');
+        const courtTypeSelect = row.querySelector('.court-type');
+        const location = event.target.value;
+        const day = row.querySelector('.day-of-week').value;
+
+        if (location === 'PBA Canningvale') {
+            courtTypeSelect.classList.remove('hidden');
+            courtTypeSelect.setAttribute('required', 'required');
+        } else {
+            courtTypeSelect.classList.add('hidden');
+            courtTypeSelect.removeAttribute('required');
+            courtTypeSelect.value = '';
+        }
+
+        populateTimeDropdowns(row);
+        updateCredits();
+    }
+
+    /**
+     * Handles changes to the day of the week.
+     * @param {Event} event - The change event.
+     */
+    function handleDayOfWeekChange(event) {
+        const row = event.target.closest('tr');
+        const location = row.querySelector('.court-location').value;
+
+        populateTimeDropdowns(row);
+        updateCredits();
+    }
+
+    /**
+     * Handles changes to the court type.
+     * @param {Event} event - The change event.
+     */
+    function handleCourtTypeChange(event) {
+        updateCredits();
+    }
+
+    /**
+     * Adds event listeners to dynamic elements.
+     */
     function updateEventListeners() {
         // Delete row buttons
         document.querySelectorAll('.delete-row').forEach(button => {
@@ -192,45 +358,32 @@
 
         // Court location change
         document.querySelectorAll('.court-location').forEach(select => {
-            select.removeEventListener('change', handleCourtLocationChange); // Prevent duplicate listeners
+            select.removeEventListener('change', handleCourtLocationChange);
             select.addEventListener('change', handleCourtLocationChange);
         });
 
-        // Session start, end, and day of week changes
-        document.querySelectorAll('.session-start, .session-end, .day-of-week').forEach(select => {
+        // Day of week change
+        document.querySelectorAll('.day-of-week').forEach(select => {
+            select.removeEventListener('change', handleDayOfWeekChange);
+            select.addEventListener('change', handleDayOfWeekChange);
+        });
+
+        // Session start, end changes
+        document.querySelectorAll('.session-start, .session-end').forEach(select => {
             select.removeEventListener('change', updateCredits);
             select.addEventListener('change', updateCredits);
         });
 
         // Court type changes
         document.querySelectorAll('.court-type').forEach(select => {
-            select.removeEventListener('change', updateCredits);
-            select.addEventListener('change', updateCredits);
+            select.removeEventListener('change', handleCourtTypeChange);
+            select.addEventListener('change', handleCourtTypeChange);
         });
     }
 
-    // Handler for deleting a row
-    function deleteRow(event) {
-        event.target.closest('tr').remove();
-        updateCredits();
-    }
-
-    // Handler for court location changes
-    function handleCourtLocationChange(event) {
-        const row = event.target.closest('tr');
-        const courtTypeSelect = row.querySelector('.court-type');
-        if (event.target.value === 'PBA Canningvale') {
-            courtTypeSelect.classList.remove('hidden');
-            courtTypeSelect.setAttribute('required', 'required');
-        } else {
-            courtTypeSelect.classList.add('hidden');
-            courtTypeSelect.removeAttribute('required');
-            courtTypeSelect.value = '';
-        }
-        updateCredits();
-    }
-
-    // Event listener for adding a new row
+    /**
+     * Adds a new row to the table.
+     */
     document.getElementById('addRow').addEventListener('click', () => {
         const tableBody = document.querySelector('#studentTable tbody');
         const newRow = document.createElement('tr');
@@ -238,6 +391,7 @@
             <td><input type="text" name="studentName[]" required></td>
             <td>
                 <select name="dayOfWeek[]" class="day-of-week" required>
+                    <option value="">Select Day</option>
                     <option value="Monday">Monday</option>
                     <option value="Tuesday">Tuesday</option>
                     <option value="Wednesday">Wednesday</option>
@@ -249,18 +403,19 @@
             </td>
             <td>
                 <select name="sessionStart[]" class="session-start" required>
+                    <option value="">Select Time</option>
                     <!-- Options will be populated dynamically -->
                 </select>
             </td>
             <td>
                 <select name="sessionEnd[]" class="session-end" required>
+                    <option value="">Select Time</option>
                     <!-- Options will be populated dynamically -->
                 </select>
             </td>
             <td>
                 <select name="courtLocation[]" class="court-location" required>
                     <option value="">Select Location</option>
-                    <option value="PBA Redcliffe">PBA Redcliffe</option>
                     <option value="PBA Canningvale">PBA Canningvale</option>
                     <option value="PBA Malaga">PBA Malaga</option>
                 </select>
@@ -276,12 +431,15 @@
             <td><button type="button" class="delete-row">Delete</button></td>
         `;
         tableBody.appendChild(newRow);
-        populateTimeDropdowns(newRow);
+        const lastRow = tableBody.lastElementChild;
+        populateTimeDropdowns(lastRow);
         updateEventListeners();
         updateCredits();
     });
 
-    // Initial population of time dropdowns and event listeners
+    /**
+     * Initializes the table on page load.
+     */
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#studentTable tbody tr').forEach(row => {
             populateTimeDropdowns(row);
