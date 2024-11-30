@@ -35,9 +35,9 @@ def load_cookies(driver, cookie_file):
         except Exception as e:
             print(f"Error adding cookie: {e}")
 
-def selenium_booking_task(credit, booking_id):
+def selenium_booking_task_grouped(credits_list):
     """
-    Handles a single booking action.
+    Handles multiple booking actions grouped into tabs within a single browser window.
     """
     chrome_options = Options()
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -62,50 +62,74 @@ def selenium_booking_task(credit, booking_id):
         load_cookies(driver, "pba_cookies.json")
         driver.refresh()
 
-        print(f"[Booking {booking_id}] Cookies loaded successfully.")
+        print("Cookies loaded successfully.")
 
-        # Navigate to the credit list page
-        driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
-        wait = WebDriverWait(driver, 10)
-        dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
-        select = Select(dropdown)
+        # Open a new tab for each booking
+        for idx, credit in enumerate(credits_list):
+            if idx > 0:
+                # Open a new tab
+                driver.execute_script("window.open('');")
+            # Switch to the newly opened tab
+            driver.switch_to.window(driver.window_handles[idx])
+            print(f"Switched to tab {idx + 1}")
 
-        # Select the correct credit amount based on price only
-        option_found = False
-        for option in select.options:
-            # Extract the price from the option text
-            option_text = option.text
-            price_match = re.search(r'Price: \$([\d.]+)', option_text)
-            if price_match:
-                option_price = float(price_match.group(1))
-                # Compare the price
-                if option_price == credit['amount']:
-                    select.select_by_value(option.get_attribute('value'))
-                    option_found = True
-                    print(f"[Booking {booking_id}] Selected option: {option_text}")
-                    break
-        if not option_found:
-            print(f"[Booking {booking_id}] Could not find option for amount ${credit['amount']:.2f}")
-            return
+            # Perform booking action in this tab
+            try:
+                # Navigate to the credit list page
+                driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
+                wait = WebDriverWait(driver, 30)
 
-        # Perform the booking action (e.g., click a button)
-        # Example:
-        book_button = wait.until(EC.element_to_be_clickable((By.ID, "bookButton")))  # Replace with actual selector
-        book_button.click()
+                # Select the correct credit amount based on price
+                dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
+                select = Select(dropdown)
+                option_found = False
 
-        # Wait for some confirmation or result
-        # Example:
-        confirmation = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "confirmationMessage")))
-        print(f"[Booking {booking_id}] Booking confirmed: {confirmation.text}")
+                for option in select.options:
+                    option_text = option.text
+                    price_match = re.search(r'Price: \$([\d.]+)', option_text)
+                    if price_match:
+                        option_price = float(price_match.group(1))
+                        if option_price == credit['amount']:
+                            select.select_by_value(option.get_attribute('value'))
+                            option_found = True
+                            print(f"[Tab {idx + 1}] Selected option: {option_text}")
+                            break
 
-        # Optionally, add delays or additional steps as needed
-        time.sleep(2)
+                if not option_found:
+                    print(f"[Tab {idx + 1}] Could not find option for amount ${credit['amount']:.2f}")
+                    continue
+
+                # Click the "Credit top up" button
+                credit_top_up_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentCreditLink[title='Credit top up']"))
+                )
+                credit_top_up_button.click()
+                print(f"[Tab {idx + 1}] Clicked on 'Credit top up'.")
+
+                # Select the payment type radio button
+                payment_type_radio = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "input.paymentTypeCheck[type='radio'][value='STRIPE']"))
+                )
+                payment_type_radio.click()
+                print(f"[Tab {idx + 1}] Selected 'Stripe' payment option.")
+
+                # Click the "Pay now" button
+                pay_now_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentButton[title='Pay now']"))
+                )
+                pay_now_button.click()
+                print(f"[Tab {idx + 1}] Clicked on 'Pay now' button.")
+
+            except Exception as e:
+                print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
+
+        print("All tabs processed successfully.")
 
     except Exception as e:
-        print(f"[Booking {booking_id}] An error occurred during booking: {e}")
+        print(f"An error occurred during grouped booking: {e}")
     finally:
         driver.quit()
-        print(f"[Booking {booking_id}] Browser closed.")
+        print("Browser closed.")
 
 @app.route('/')
 def index():
@@ -150,18 +174,12 @@ def book():
         else:
             print(f"Could not parse line: {line.strip()}")
 
-    threads = []
-    for idx, credit in enumerate(credits_list, start=1):
-        thread = threading.Thread(target=selenium_booking_task, args=(credit, idx))
-        thread.start()
-        threads.append(thread)
-        # Optional: Limit the number of concurrent threads
-        # while threading.active_count() > MAX_CONCURRENT_THREADS:
-        #     time.sleep(1)
+    # Run all bookings in grouped tabs
+    threading.Thread(target=selenium_booking_task_grouped, args=(credits_list,)).start()
 
-    print(f"Started {len(threads)} booking threads.")
+    print(f"Started booking process for {len(credits_list)} credits.")
 
-    return f"Booking for {studentName} is being processed in the background!"
+    return f"Booking for {studentName} is being processed in grouped tabs!"
 
 if __name__ == '__main__':
     app.run(debug=True)
