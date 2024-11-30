@@ -44,7 +44,7 @@
                     <th>Court Type</th>
                     <th>Session Start</th>
                     <th>Session End</th>
-                    <th>Credits to Book</th>
+                    <th>Credits to Buy</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -219,7 +219,7 @@
             const location = row.querySelector('.court-location').value;
             const type = row.querySelector('.court-type').value;
             const day = row.querySelector('.day-of-week').value;
-            const creditsCell = row.querySelector('.credits-to-book');
+            const creditsCell = row.querySelector('.credits-to-buy');
             creditsCell.innerHTML = calculateCredits(start, end, location, type, day);
         });
     }
@@ -278,7 +278,7 @@
             deleteRow(event);
         } else if (event.target.classList.contains('message-button')) {
             alert('Message sent to student.');
-        } else if (event.target.classList.contains('book-button')) {
+        } else if (event.target.classList.contains('buy-credits-button')) {
             alert('Session booked successfully.');
         }
     }
@@ -340,14 +340,14 @@
                     <option value="">Select Time</option>
                 </select>
             </td>
-            <td class="credits-to-book"></td>
+            <td class="credits-to-buy"></td>
             <td class="status-column">
                 <label><input type="checkbox" name="statusMessaged[]"> Messaged</label><br>
                 <label><input type="checkbox" name="statusBooked[]"> Booked</label>
             </td>
             <td>
                 <button type="button" class="message-button">Message</button>
-                <button type="button" class="book-button">Book</button>
+                <button type="button" class="buy-credits-button">Buy Credits</button>
                 <button type="button" class="delete-row">Delete</button>
             </td>
         `;
@@ -388,10 +388,10 @@
             deleteRow(event);
         } else if (event.target.classList.contains('message-button')) {
             alert('Message sent to student.');
-        } else if (event.target.classList.contains('book-button')) {
+        } else if (event.target.classList.contains('buy-credits-button')) {
             const row = event.target.closest('tr');
-            const creditsCell = row.querySelector('.credits-to-book');
-            const creditsToBook = creditsCell.innerHTML;
+            const creditsCell = row.querySelector('.credits-to-buy');
+            const creditsToBuy = creditsCell.innerHTML;
 
             // Get other data if needed
             const studentName = row.querySelector('.student-name').value;
@@ -409,11 +409,11 @@
                 courtType,
                 sessionStart,
                 sessionEnd,
-                creditsToBook
+                creditsToBuy
             };
 
             // Send the data to the server via POST request
-            fetch('/book', {
+            fetch('/buy-credits', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -480,14 +480,14 @@
                         <option value="">Select Time</option>
                     </select>
                 </td>
-                <td class="credits-to-book"></td>
+                <td class="credits-to-buy"></td>
                 <td class="status-column">
                     <label><input type="checkbox" name="statusMessaged[]" ${session.statusMessaged ? 'checked' : ''}> Messaged</label><br>
                     <label><input type="checkbox" name="statusBooked[]" ${session.statusBooked ? 'checked' : ''}> Booked</label>
                 </td>
                 <td>
                     <button type="button" class="message-button">Message</button>
-                    <button type="button" class="book-button">Book</button>
+                    <button type="button" class="buy-credits-button">Buy Credits</button>
                     <button type="button" class="delete-row">Delete</button>
                 </td>
             `;

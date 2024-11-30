@@ -134,6 +134,13 @@ def selenium_booking_task_grouped(credits_list):
                 driver.refresh()
                 print(f"[Tab {idx + 1}] Loaded Paypal cookies and refreshed.")
 
+                # Click the "Complete Purchase" button
+                complete_purchase_button = wait.until(
+                    EC.element_to_be_clickable((By.ID, "payment-submit-btn"))
+                )
+                complete_purchase_button.click()
+                print(f"[Tab {idx + 1}] Clicked on 'Complete Purchase' button.")
+
             except Exception as e:
                 print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
 
@@ -155,8 +162,8 @@ def selenium_booking_task_grouped(credits_list):
 def index():
     return render_template('index.html')  # Assumes index.html is in the templates folder
 
-@app.route('/book', methods=['POST'])
-def book():
+@app.route('/buy-credits', methods=['POST'])
+def buy_credits():
     data = request.get_json()
     if not data:
         return "Invalid data received.", 400
@@ -168,7 +175,7 @@ def book():
     courtType = data.get('courtType')
     sessionStart = data.get('sessionStart')
     sessionEnd = data.get('sessionEnd')
-    creditsToBook = data.get('creditsToBook')
+    creditsToBuy = data.get('creditsToBuy')
 
     # For debugging purposes, print the received data
     print("Received booking request for:")
@@ -178,10 +185,10 @@ def book():
     print(f"Court Type: {courtType}")
     print(f"Session Start: {sessionStart}")
     print(f"Session End: {sessionEnd}")
-    print(f"Credits to Book: {creditsToBook}")
+    print(f"Credits to Buy: {creditsToBuy}")
 
-    # Parse the credits to book
-    credits_lines = re.sub(r'<[^>]*>', '\n', creditsToBook).split('\n')
+    # Parse the credits to buy
+    credits_lines = re.sub(r'<[^>]*>', '\n', creditsToBuy).split('\n')
 
     credits_list = []
     for line in credits_lines:
@@ -197,9 +204,9 @@ def book():
     # Run all bookings in grouped tabs
     threading.Thread(target=selenium_booking_task_grouped, args=(credits_list,)).start()
 
-    print(f"Started booking process for {len(credits_list)} credits.")
+    print(f"Started buying process for {len(credits_list)} credits.")
 
-    return f"Booking for {studentName} is being processed in grouped tabs!"
+    return f"Buying credits for {studentName} is being processed in grouped tabs!"
 
 if __name__ == '__main__':
     app.run(debug=True)
