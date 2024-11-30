@@ -38,9 +38,9 @@
                     <th>Student Name</th>
                     <th>Day of the Week</th>
                     <th>Court Location</th>
+                    <th>Court Type</th>
                     <th>Session Start</th>
                     <th>Session End</th>
-                    <th>Court Type</th>
                     <th>Credits to Book</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -318,6 +318,13 @@
                 </select>
             </td>
             <td>
+                <select name="courtType[]" class="court-type hidden">
+                    <option value="">Select Type</option>
+                    <option value="Hebat Court">Hebat Court</option>
+                    <option value="Super Court">Super Court</option>
+                </select>
+            </td>
+            <td>
                 <select name="sessionStart[]" class="session-start" required>
                     <option value="">Select Time</option>
                 </select>
@@ -325,13 +332,6 @@
             <td>
                 <select name="sessionEnd[]" class="session-end" required>
                     <option value="">Select Time</option>
-                </select>
-            </td>
-            <td>
-                <select name="courtType[]" class="court-type hidden">
-                    <option value="">Select Type</option>
-                    <option value="Hebat Court">Hebat Court</option>
-                    <option value="Super Court">Super Court</option>
                 </select>
             </td>
             <td class="credits-to-book"></td>
@@ -404,6 +404,13 @@
                     </select>
                 </td>
                 <td>
+                    <select name="courtType[]" class="court-type ${session.courtLocation === 'PBA Canningvale' ? '' : 'hidden'}">
+                        <option value="">Select Type</option>
+                        <option value="Hebat Court">Hebat Court</option>
+                        <option value="Super Court">Super Court</option>
+                    </select>
+                </td>
+                <td>
                     <select name="sessionStart[]" class="session-start" required>
                         <option value="">Select Time</option>
                     </select>
@@ -411,13 +418,6 @@
                 <td>
                     <select name="sessionEnd[]" class="session-end" required>
                         <option value="">Select Time</option>
-                    </select>
-                </td>
-                <td>
-                    <select name="courtType[]" class="court-type ${session.courtLocation === 'PBA Canningvale' ? '' : 'hidden'}">
-                        <option value="">Select Type</option>
-                        <option value="Hebat Court">Hebat Court</option>
-                        <option value="Super Court">Super Court</option>
                     </select>
                 </td>
                 <td class="credits-to-book"></td>
