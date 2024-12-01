@@ -141,6 +141,14 @@ def selenium_booking_task_grouped(credits_list):
                 complete_purchase_button.click()
                 print(f"[Tab {idx + 1}] Clicked on 'Complete Purchase' button.")
 
+                # Click the "Return to Seller" button
+                return_to_seller_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR,
+                                                "button.donepage-return-to-merchant-button.xo-member-2vilsm-button-button-Button-css-buttonStyles-buttonStyles"))
+                )
+                return_to_seller_button.click()
+                print(f"[Tab {idx + 1}] Clicked on 'Return to Seller' button.")
+
             except Exception as e:
                 print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
 
