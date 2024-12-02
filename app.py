@@ -221,6 +221,15 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         booking_date = target_date.strftime("%Y-%m-%d")
         print(f"[Main] Calculated booking date: {booking_date}")
 
+        # Handle modal if it appears
+        try:
+            modal = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-dialog")))
+            close_button = modal.find_element(By.CSS_SELECTOR, "button.ui-dialog-titlebar-close")
+            close_button.click()
+            print("[Main] Closed the modal dialog box.")
+        except Exception as modal_exception:
+            print("[Main] No modal dialog appeared or error handling modal:")
+
         try:
             while True:
                 time.sleep(5000)  # Keeps the script running indefinitely until manually stopped
