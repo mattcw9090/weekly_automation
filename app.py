@@ -249,7 +249,6 @@ def book_court():
         return "Invalid data received.", 400
 
     # Extract data from the request
-    studentName = data.get('studentName')
     dayOfWeek = data.get('dayOfWeek')
     courtLocation = data.get('courtLocation')
     courtType = data.get('courtType')
@@ -258,7 +257,6 @@ def book_court():
 
     # For debugging purposes, print the received data
     print("Received book court request:")
-    print(f"Student Name: {studentName}")
     print(f"Day of Week: {dayOfWeek}")
     print(f"Court Location: {courtLocation}")
     print(f"Court Type: {courtType}")

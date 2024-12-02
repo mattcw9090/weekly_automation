@@ -346,7 +346,6 @@ function actionsHandler(event) {
         const row = event.target.closest('tr');
 
         // Retrieve data from row
-        const studentName = row.querySelector('.student-name').value;
         const dayOfWeek = row.querySelector('.day-of-week').value;
         const courtLocation = row.querySelector('.court-location').value;
         const courtType = row.querySelector('.court-type').value;
@@ -355,7 +354,6 @@ function actionsHandler(event) {
 
         // Prepare the data to send to the server
         const data = {
-            studentName,
             dayOfWeek,
             courtLocation,
             courtType,
