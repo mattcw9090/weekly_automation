@@ -162,7 +162,7 @@ def selenium_buy_credits_task(credits_list):
         print("Browser closed.")
 
 
-def selenium_book_court_task():
+def selenium_book_court_task(dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd):
     """
     Handles court booking action
     """
@@ -188,6 +188,8 @@ def selenium_book_court_task():
         load_cookies(driver, "pba_cookies.json")
         driver.refresh()
         print("[Main] Loaded PBA cookies and refreshed.")
+
+        ## LOGIC TO BE IMPLEMENTED ##
 
         try:
             while True:
@@ -264,7 +266,7 @@ def book_court():
     print(f"Session End: {sessionEnd}")
 
     # Run all bookings in grouped tabs
-    selenium_book_court_task()
+    selenium_book_court_task(dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd)
 
     return f"Booking court in progress!"
 
