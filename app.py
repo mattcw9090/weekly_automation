@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from datetime import datetime, timedelta
 import json
 import time
 import re
@@ -162,7 +163,7 @@ def selenium_buy_credits_task(credits_list):
         print("Browser closed.")
 
 
-def selenium_book_court_task(dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd):
+def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd):
     """
     Handles court booking action
     """
@@ -189,13 +190,36 @@ def selenium_book_court_task(dayOfWeek, courtLocation, courtType, sessionStart, 
         driver.refresh()
         print("[Main] Loaded PBA cookies and refreshed.")
 
-        ## LOGIC TO BE IMPLEMENTED ##
-        # if courtLocation == "PBA Canningvale" and courtType == "Hebat Court":
-        #     select the button "CANNING VALE - HEBAT COURT"
-        # else if courtLocation == "PBA Canningvale" and courtType == "Super Court":
-        #     select the button "CANNING VALE - SUPER COURT"
-        # else if courtLocation == "PBA Malaga":
-        #     select the button "MALAGA"
+        wait = WebDriverWait(driver, 50)
+
+        # Select the appropriate court button based on the input
+        if courtLocation == "PBA Canningvale" and courtType == "Hebat Court":
+            button = wait.until(EC.element_to_be_clickable((By.ID, "ui-id-11")))
+        elif courtLocation == "PBA Canningvale" and courtType == "Super Court":
+            button = wait.until(EC.element_to_be_clickable((By.ID, "ui-id-9")))
+        elif courtLocation == "PBA Malaga":
+            button = wait.until(EC.element_to_be_clickable((By.ID, "ui-id-1")))
+        else:
+            raise ValueError("Invalid court location or type provided.")
+
+        button.click()
+        print(f"[Main] Selected court button for {courtLocation} - {courtType}.")
+
+        # Calculate the booking date based on startingWeek and dayOfWeek
+        day_of_week_mapping = {
+            "Monday": 0,
+            "Tuesday": 1,
+            "Wednesday": 2,
+            "Thursday": 3,
+            "Friday": 4,
+            "Saturday": 5,
+            "Sunday": 6
+        }
+
+        starting_week_date = datetime.strptime(startingWeek, "%Y-%m-%d")
+        target_date = starting_week_date + timedelta(days=day_of_week_mapping[dayOfWeek])
+        booking_date = target_date.strftime("%Y-%m-%d")
+        print(f"[Main] Calculated booking date: {booking_date}")
 
         try:
             while True:
@@ -274,7 +298,7 @@ def book_court():
     print(f"Session End: {sessionEnd}")
 
     # Run all bookings in grouped tabs
-    selenium_book_court_task(dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd)
+    selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd)
 
     return f"Booking court in progress!"
 
