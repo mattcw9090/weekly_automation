@@ -76,7 +76,7 @@ def selenium_buy_credits_task(credits_list):
             print(f"[Tab {idx + 1}] Switched to tab {idx + 1}.")
 
             # Initialize WebDriverWait for each tab
-            wait = WebDriverWait(driver, 50)
+            wait = WebDriverWait(driver, 60)
 
             try:
                 # Navigate to the credit list page
@@ -190,7 +190,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         driver.refresh()
         print("[Main] Loaded PBA cookies and refreshed.")
 
-        wait = WebDriverWait(driver, 50)
+        wait = WebDriverWait(driver, 60)
 
         # Select the appropriate court button based on the input
         if courtLocation == "PBA Canningvale" and courtType == "Hebat Court":
@@ -263,9 +263,31 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         except Exception as e:
             print(f"An error occurred while navigating the calendar: {e}")
 
-        # ## TO DO IMPLEMENTATION ##
-        # now extract the day of the booking_date, and select the day on the calendar
-        # ##
+        # Extract the day of the booking_date
+        target_day = booking_date.day
+
+        try:
+            # Directly search for the target day in the current calendar view
+            day_selector = "td[data-handler='selectDay'] a.ui-state-default"
+
+            # Locate all day elements
+            day_elements = driver.find_elements(By.CSS_SELECTOR, day_selector)
+            day_found = False
+
+            for day_element in day_elements:
+                if day_element.text.strip() == str(target_day):
+                    # Click the matching day
+                    day_element.click()
+                    day_found = True
+                    print(f"[Main] Successfully selected the day: {target_day}")
+                    break
+
+            if not day_found:
+                print(f"[Main] Could not find or click the target day: {target_day}")
+
+        except Exception as e:
+            print(f"An error occurred while selecting the day: {e}")
+
 
         try:
             while True:
