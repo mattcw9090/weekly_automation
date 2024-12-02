@@ -281,19 +281,19 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         else:
             print(f"[Main] Failed to select the day after 3 attempts.")
 
-        ######## TO DO IMPLEMENTATION: SELECTING TIMESLOT
-        div_element = driver.find_element(By.CLASS_NAME, 'schemaWrapper')
-        rows = div_element.find_elements(By.XPATH, ".//tr[starts-with(@class, 'trSchemaLane_')]")
-        for row in rows:
-            try:
-                timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:00am–9:30am - Available')]")
-                timeblock.click()
-                timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:30am–10:00am - Available')]")
-                timeblock.click()
-                break
-            except Exception as e:
-                continue
-        #########
+        # ######## TO DO IMPLEMENTATION: SELECTING TIMESLOT
+        # div_element = driver.find_element(By.CLASS_NAME, 'schemaWrapper')
+        # rows = div_element.find_elements(By.XPATH, ".//tr[starts-with(@class, 'trSchemaLane_')]")
+        # for row in rows:
+        #     try:
+        #         timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:00am–9:30am - Available')]")
+        #         timeblock.click()
+        #         timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:30am–10:00am - Available')]")
+        #         timeblock.click()
+        #         break
+        #     except Exception as e:
+        #         continue
+        # #########
 
         try:
             while True:
