@@ -52,7 +52,7 @@ def load_and_refresh_cookies(driver, url, cookie_file):
     driver.delete_all_cookies()
     load_cookies(driver, cookie_file)
     driver.refresh()
-    thread_safe_print(f"[Main] Loaded cookies from {cookie_file} and refreshed {url}.")
+    print(f"[Main] Loaded cookies from {cookie_file} and refreshed {url}.")
 
 
 def selenium_buy_credits_task(credits_list):
