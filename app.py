@@ -258,7 +258,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
                 break
             except StaleElementReferenceException:
                 print("[Main] Retrying due to stale element reference...")
-                time.sleep(1)
+                time.sleep(2)
         else:
             print(f"[Main] Failed to select the day after 3 attempts.")
 
@@ -351,7 +351,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
                             except StaleElementReferenceException:
                                 print("[Main] Retrying current row due to stale element reference...")
-                                time.sleep(1)
+                                time.sleep(2)
                                 continue  # Retry the current row up to 3 times
 
                             # If successful, break out of retry loop for the current row
@@ -367,11 +367,11 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
                         break
                     else:
                         print("[Main] Retrying entire row selection due to missing required blocks.")
-                        time.sleep(1)
+                        time.sleep(2)
 
                 except StaleElementReferenceException:
                     print("[Main] Retrying entire schedule loading due to stale element reference...")
-                    time.sleep(1)
+                    time.sleep(2)
 
             if not booking_successful:
                 print("[Main] Could not find the required consecutive time blocks in any row.")
@@ -379,12 +379,12 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
             # Proceed with the booking as per your website's flow
             if booking_successful:
-                proceed_button = wait.until(EC.element_to_be_clickable((By.ID, 'nextButton')))
-                click_element_with_retry(driver, proceed_button)
-                print("[Main] Clicked on 'Next' button.")
+                print("[Main] Consective Timeblock Selection Successful.")
 
         except Exception as e:
             print(f"[Main] An error occurred while selecting timeblocks: {e}")
+
+        # Remaining logic goes here
 
         try:
             while True:
