@@ -236,29 +236,39 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
             target_year = booking_date.strftime("%Y")
 
             while True:
-                # Find the calendar's current month and year
-                calendar_header = driver.find_element(By.CLASS_NAME, "ui-datepicker-header")
-                displayed_month = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-month").text
-                displayed_year = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-year").text
+                try:
+                    # Re-locate the calendar header and title every iteration
+                    calendar_header = driver.find_element(By.CLASS_NAME, "ui-datepicker-header")
+                    calendar_title = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-title")
+                    displayed_month = calendar_title.find_element(By.CLASS_NAME, "ui-datepicker-month").text
+                    displayed_year = calendar_title.find_element(By.CLASS_NAME, "ui-datepicker-year").text
 
-                if displayed_month == target_month and displayed_year == target_year:
-                    print("[Main] Calendar is displaying the correct month and year.")
-                    break  # Exit the loop if the calendar displays the correct month and year
+                    if displayed_month == target_month and displayed_year == target_year:
+                        print("[Main] Calendar is displaying the correct month and year.")
+                        break  # Exit the loop if the calendar displays the correct month and year
 
-                # Determine whether to navigate forward or backward
-                if int(displayed_year) < int(target_year) or (displayed_year == target_year and
-                                                              list(calendar.month_name).index(displayed_month) <
-                                                              list(calendar.month_name).index(target_month)):
-                    next_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-next")
-                    next_button.click()
-                    print("[Main] Navigated to the next month.")
-                else:
-                    prev_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-prev")
-                    prev_button.click()
-                    print("[Main] Navigated to the previous month.")
+                    # Determine whether to navigate forward or backward
+                    if int(displayed_year) < int(target_year) or (
+                            displayed_year == target_year and
+                            list(calendar.month_name).index(displayed_month) <
+                            list(calendar.month_name).index(target_month)
+                    ):
+                        next_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-next")
+                        next_button.click()
+                        print("[Main] Navigated to the next month.")
+                    else:
+                        prev_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-prev")
+                        prev_button.click()
+                        print("[Main] Navigated to the previous month.")
 
-                # Add a short wait to allow the calendar to update
-                time.sleep(0.5)
+                    # Add a short wait to allow the DOM to update
+                    WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-header"))
+                    )
+
+                except Exception as e:
+                    print(f"An error occurred while navigating the calendar: {e}")
+                    break
 
         except Exception as e:
             print(f"An error occurred while navigating the calendar: {e}")
@@ -288,6 +298,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         except Exception as e:
             print(f"An error occurred while selecting the day: {e}")
 
+        # TO DO IMPLEMENTATION: SELECTING TIMESLOT
 
         try:
             while True:
