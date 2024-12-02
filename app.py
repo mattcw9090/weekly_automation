@@ -230,6 +230,40 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         except:
             print("[Main] No modal dialog appeared or error handling modal")
 
+        # Navigate to the correct month and year on the calendar
+        try:
+            # Extract target month and year from booking_date
+            target_month = target_date.strftime("%B")
+            target_year = target_date.strftime("%Y")
+
+            while True:
+                # Find the calendar's current month and year
+                calendar_header = driver.find_element(By.CLASS_NAME, "ui-datepicker-header")
+                displayed_month = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-month").text
+                displayed_year = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-year").text
+
+                if displayed_month == target_month and displayed_year == target_year:
+                    print("[Main] Calendar is displaying the correct month and year.")
+                    break  # Exit the loop if the calendar displays the correct month and year
+
+                # Determine whether to navigate forward or backward
+                if int(displayed_year) < int(target_year) or (displayed_year == target_year and
+                                                              list(calendar.month_name).index(displayed_month) <
+                                                              list(calendar.month_name).index(target_month)):
+                    next_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-next")
+                    next_button.click()
+                    print("[Main] Navigated to the next month.")
+                else:
+                    prev_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-prev")
+                    prev_button.click()
+                    print("[Main] Navigated to the previous month.")
+
+                # Add a short wait to allow the calendar to update
+                time.sleep(0.5)
+
+        except Exception as e:
+            print(f"An error occurred while navigating the calendar: {e}")
+
         try:
             while True:
                 time.sleep(5000)  # Keeps the script running indefinitely until manually stopped
