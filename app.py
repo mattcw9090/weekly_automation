@@ -47,6 +47,14 @@ def load_cookies(driver, cookie_file):
             print(f"Error adding cookie: {e}")
 
 
+def load_and_refresh_cookies(driver, url, cookie_file):
+    driver.get(url)
+    driver.delete_all_cookies()
+    load_cookies(driver, cookie_file)
+    driver.refresh()
+    thread_safe_print(f"[Main] Loaded cookies from {cookie_file} and refreshed {url}.")
+
+
 def selenium_buy_credits_task(credits_list):
     """
     Handles multiple buy credit actions grouped into tabs within a single browser window.
@@ -54,19 +62,8 @@ def selenium_buy_credits_task(credits_list):
     driver = get_chrome_driver()
 
     try:
-        # Load Google cookies
-        driver.get("https://www.google.com")
-        driver.delete_all_cookies()
-        load_cookies(driver, "google_cookies.json")
-        driver.refresh()
-        print("[Main] Loaded Google cookies and refreshed.")
-
-        # Load PBA cookies
-        driver.get("https://pba.yepbooking.com.au")
-        driver.delete_all_cookies()
-        load_cookies(driver, "pba_cookies.json")
-        driver.refresh()
-        print("[Main] Loaded PBA cookies and refreshed.")
+        load_and_refresh_cookies(driver, "https://www.google.com", "google_cookies.json")
+        load_and_refresh_cookies(driver, "https://pba.yepbooking.com.au", "pba_cookies.json")
 
         # Open a new tab for each booking
         for idx, credit in enumerate(credits_list):
@@ -173,19 +170,8 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
     driver = get_chrome_driver()
 
     try:
-        # Load Google cookies
-        driver.get("https://www.google.com")
-        driver.delete_all_cookies()
-        load_cookies(driver, "google_cookies.json")
-        driver.refresh()
-        print("[Main] Loaded Google cookies and refreshed.")
-
-        # Load PBA cookies
-        driver.get("https://pba.yepbooking.com.au")
-        driver.delete_all_cookies()
-        load_cookies(driver, "pba_cookies.json")
-        driver.refresh()
-        print("[Main] Loaded PBA cookies and refreshed.")
+        load_and_refresh_cookies(driver, "https://www.google.com", "google_cookies.json")
+        load_and_refresh_cookies(driver, "https://pba.yepbooking.com.au", "pba_cookies.json")
 
         wait = WebDriverWait(driver, 60)
 
