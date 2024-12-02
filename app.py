@@ -282,19 +282,111 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         else:
             print(f"[Main] Failed to select the day after 3 attempts.")
 
-        # ######## TO DO IMPLEMENTATION: SELECTING TIMESLOT
-        # div_element = driver.find_element(By.CLASS_NAME, 'schemaWrapper')
-        # rows = div_element.find_elements(By.XPATH, ".//tr[starts-with(@class, 'trSchemaLane_')]")
-        # for row in rows:
-        #     try:
-        #         timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:00am–9:30am - Available')]")
-        #         timeblock.click()
-        #         timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:30am–10:00am - Available')]")
-        #         timeblock.click()
-        #         break
-        #     except Exception as e:
-        #         continue
-        # #########
+        # Helper function to click element with retry mechanism
+        def click_element_with_retry(driver, element, retries=3, delay=1):
+            for attempt in range(retries):
+                try:
+                    element.click()
+                    print(
+                        f"[Main] Clicked on element: {element.get_attribute('title') if element.get_attribute('title') else element.tag_name}")
+                    return True
+                except StaleElementReferenceException:
+                    print("[Main] Retrying due to stale element reference...")
+                    time.sleep(delay)
+                except Exception as e:
+                    print(f"[Main] Unexpected error occurred while clicking: {e}")
+                    time.sleep(delay)
+            print(f"[Main] Failed to click the element after {retries} attempts.")
+            return False
+
+        # Timeblock selection code
+        try:
+            # Wait for the schedule wrapper to appear
+            schema_wrapper = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'schemaWrapper')))
+            print("[Main] Schedule loaded.")
+
+            # Parse session start and end times into datetime objects
+            desired_start_time = datetime.strptime(sessionStart, '%H:%M')
+            desired_end_time = datetime.strptime(sessionEnd, '%H:%M')
+
+            # Flag to indicate if booking was successful
+            booking_successful = False
+
+            for attempt in range(3):
+                try:
+                    # Refresh row elements to avoid stale element references
+                    row_elements = schema_wrapper.find_elements(By.XPATH, ".//tr[starts-with(@class, 'trSchemaLane_')]")
+
+                    for row in row_elements:
+                        time_blocks = row.find_elements(By.XPATH, ".//td/div[@class='divHour']/a")
+                        available_time_blocks = {}
+
+                        for block in time_blocks:
+                            # Extract the title attribute containing the time range and availability
+                            title = block.get_attribute('title')
+                            match = re.match(r"(\d{1,2}:\d{2}[ap]m)[–-](\d{1,2}:\d{2}[ap]m) - Available", title)
+                            if match:
+                                block_start_str = match.group(1)
+                                block_end_str = match.group(2)
+                                block_start_time = datetime.strptime(block_start_str, '%I:%M%p')
+                                block_end_time = datetime.strptime(block_end_str, '%I:%M%p')
+
+                                # Check if this block is within the desired time range
+                                if desired_start_time <= block_start_time < desired_end_time:
+                                    available_time_blocks[block_start_time] = block
+
+                        # Check for required consecutive time blocks
+                        current_time = desired_start_time
+                        blocks_to_click = []
+
+                        while current_time < desired_end_time:
+                            block_element = available_time_blocks.get(current_time)
+                            if block_element:
+                                blocks_to_click.append(block_element)
+                                current_time += timedelta(minutes=30)
+                            else:
+                                print(
+                                    f"[Main] Missing time block at {current_time.strftime('%I:%M%p')} in row {row.get_attribute('class')}")
+                                break
+
+                        if current_time >= desired_end_time:
+                            # Found all required blocks in this row
+                            print(f"[Main] Found required time blocks in row {row.get_attribute('class')}")
+                            booking_successful = True
+
+                            # Click each block, refreshing before each click
+                            for block_element in blocks_to_click:
+                                if not click_element_with_retry(driver, block_element):
+                                    booking_successful = False
+                                    print("[Main] Failed to click one of the required blocks due to stale element.")
+                                    break
+
+                            # Exit loop after successful booking
+                            if booking_successful:
+                                break
+
+                    if booking_successful:
+                        break
+                    else:
+                        print("[Main] Retrying row selection due to missing required blocks.")
+                        time.sleep(1)
+
+                except StaleElementReferenceException:
+                    print("[Main] Retrying due to stale element reference...")
+                    time.sleep(1)
+
+            if not booking_successful:
+                print("[Main] Could not find the required consecutive time blocks in any row.")
+                # Handle accordingly, e.g., raise an exception or return
+
+            # Proceed with the booking as per your website's flow
+            if booking_successful:
+                proceed_button = wait.until(EC.element_to_be_clickable((By.ID, 'nextButton')))
+                click_element_with_retry(driver, proceed_button)
+                print("[Main] Clicked on 'Next' button.")
+
+        except Exception as e:
+            print(f"[Main] An error occurred while selecting timeblocks: {e}")
 
         try:
             while True:
