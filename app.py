@@ -237,11 +237,8 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
             while True:
                 try:
-                    # Re-locate the calendar header and title every iteration
-                    calendar_header = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-header")))
-                    calendar_title = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-title")
-                    displayed_month = calendar_title.find_element(By.CLASS_NAME, "ui-datepicker-month").text
-                    displayed_year = calendar_title.find_element(By.CLASS_NAME, "ui-datepicker-year").text
+                    displayed_month = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-month"))).text
+                    displayed_year = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-year"))).text
 
                     if displayed_month == target_month and displayed_year == target_year:
                         print("[Main] Calendar is displaying the correct month and year.")
