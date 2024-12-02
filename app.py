@@ -14,6 +14,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 app = Flask(__name__, static_folder='static')
 
+
 # Function to load cookies from a file
 def load_cookies(driver, cookie_file):
     with open(cookie_file, "r") as file:
@@ -34,6 +35,7 @@ def load_cookies(driver, cookie_file):
             driver.add_cookie(cookie)
         except Exception as e:
             print(f"Error adding cookie: {e}")
+
 
 def selenium_buy_credits_task(credits_list):
     """
@@ -109,7 +111,8 @@ def selenium_buy_credits_task(credits_list):
 
                 # Select the payment type radio button
                 payment_type_radio = wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "input.paymentTypeCheck[type='radio'][value='PAYPAL']"))
+                    EC.element_to_be_clickable(
+                        (By.CSS_SELECTOR, "input.paymentTypeCheck[type='radio'][value='PAYPAL']"))
                 )
                 payment_type_radio.click()
                 print(f"[Tab {idx + 1}] Selected 'Paypal' payment option.")
@@ -158,9 +161,11 @@ def selenium_buy_credits_task(credits_list):
         driver.quit()
         print("Browser closed.")
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/buy-credits', methods=['POST'])
 def buy_credits():
@@ -207,6 +212,7 @@ def buy_credits():
     print(f"Started buying process for {len(credits_list)} credits.")
 
     return f"Buying credits for {studentName} is being processed in grouped tabs!"
+
 
 if __name__ == '__main__':
     app.run(debug=True)
