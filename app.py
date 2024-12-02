@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
+import calendar
+from datetime import datetime
 import json
 import time
 import re
@@ -230,65 +232,54 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
             print("[Main] No modal dialog appeared or error handling modal")
 
         # Navigate to the correct month and year on the calendar
-        try:
-            # Extract target month and year from booking_date
-            target_month = booking_date.strftime("%B")
-            target_year = booking_date.strftime("%Y")
+        target_month = booking_date.strftime("%B")
+        target_year = booking_date.strftime("%Y")
+        target_month_number = int(booking_date.strftime("%m"))
 
-            while True:
-                try:
-                    displayed_month = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-month"))).text
-                    displayed_year = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-year"))).text
+        while True:
+            displayed_month_element = wait.until(
+                EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-month")))
+            displayed_month = displayed_month_element.text
+            displayed_year_element = wait.until(
+                EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-year")))
+            displayed_year = displayed_year_element.text
 
-                    if displayed_month == target_month and displayed_year == target_year:
-                        print("[Main] Calendar is displaying the correct month and year.")
-                        break  # Exit the loop if the calendar displays the correct month and year
+            displayed_month_number = datetime.strptime(displayed_month, '%B').month
 
-                    # Determine whether to navigate forward or backward
-                    if int(displayed_year) < int(target_year) or (
-                            displayed_year == target_year and
-                            list(calendar.month_name).index(displayed_month) <
-                            list(calendar.month_name).index(target_month)
-                    ):
-                        next_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-next")
-                        next_button.click()
-                        print("[Main] Navigated to the next month.")
-                    else:
-                        prev_button = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-prev")
-                        prev_button.click()
-                        print("[Main] Navigated to the previous month.")
+            if displayed_month == target_month and displayed_year == target_year:
+                print("[Main] Calendar is displaying the correct month and year.")
+                break
 
-                except Exception as e:
-                    print(f"An error occurred while navigating the calendar: {e}")
-                    break
+            if int(displayed_year) < int(target_year) or (
+                    int(displayed_year) == int(target_year) and displayed_month_number < target_month_number):
+                next_button = wait.until(
+                    EC.element_to_be_clickable((By.CLASS_NAME, "ui-datepicker-next")))
+                next_button.click()
+                print("[Main] Navigated to the next month.")
+            else:
+                prev_button = wait.until(
+                    EC.element_to_be_clickable((By.CLASS_NAME, "ui-datepicker-prev")))
+                prev_button.click()
+                print("[Main] Navigated to the previous month.")
 
-        except Exception as e:
-            print(f"An error occurred while navigating the calendar: {e}")
+            # Wait for the calendar to refresh
+            wait.until(EC.staleness_of(displayed_month_element))
 
         # Extract the day of the booking_date
         target_day = booking_date.day
 
-        try:
-            # Directly search for the target day in the current calendar view
-            day_selector = "td[data-handler='selectDay'] a.ui-state-default"
-
-            # Locate all day elements
-            day_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, day_selector)))
-            day_found = False
-
-            for day_element in day_elements:
-                if day_element.text.strip() == str(target_day):
-                    # Click the matching day
-                    day_element.click()
-                    day_found = True
-                    print(f"[Main] Successfully selected the day: {target_day}")
-                    break
-
-            if not day_found:
-                print(f"[Main] Could not find or click the target day: {target_day}")
-
-        except Exception as e:
-            print(f"An error occurred while selecting the day: {e}")
+        for attempt in range(3):
+            try:
+                day_xpath = f"//td[@data-handler='selectDay']/a[text()='{target_day}']"
+                day_element = wait.until(EC.element_to_be_clickable((By.XPATH, day_xpath)))
+                day_element.click()
+                print(f"[Main] Successfully selected the day: {target_day}")
+                break
+            except StaleElementReferenceException:
+                print("[Main] Retrying due to stale element reference...")
+                time.sleep(1)
+        else:
+            print(f"[Main] Failed to select the day after 3 attempts.")
 
         ######## TO DO IMPLEMENTATION: SELECTING TIMESLOT
         div_element = driver.find_element(By.CLASS_NAME, 'schemaWrapper')
@@ -301,7 +292,6 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
                 timeblock.click()
                 break
             except Exception as e:
-                # Handle exception if no such time block is found in the current row, continue to the next row
                 continue
         #########
 
