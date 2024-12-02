@@ -298,61 +298,79 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
                     row_elements = schema_wrapper.find_elements(By.XPATH, ".//tr[starts-with(@class, 'trSchemaLane_')]")
 
                     for row in row_elements:
-                        time_blocks = row.find_elements(By.XPATH, ".//td/div[@class='divHour']/a")
-                        available_time_blocks = {}
+                        # Retry mechanism for each row
+                        for row_attempt in range(3):
+                            try:
+                                time_blocks = row.find_elements(By.XPATH, ".//td/div[@class='divHour']/a")
+                                available_time_blocks = {}
 
-                        for block in time_blocks:
-                            # Extract the title attribute containing the time range and availability
-                            title = block.get_attribute('title')
-                            match = re.match(r"(\d{1,2}:\d{2}[ap]m)[–-](\d{1,2}:\d{2}[ap]m) - Available", title)
-                            if match:
-                                block_start_str = match.group(1)
-                                block_end_str = match.group(2)
-                                block_start_time = datetime.strptime(block_start_str, '%I:%M%p')
-                                block_end_time = datetime.strptime(block_end_str, '%I:%M%p')
+                                for block in time_blocks:
+                                    # Extract the title attribute containing the time range and availability
+                                    title = block.get_attribute('title')
+                                    match = re.match(r"(\d{1,2}:\d{2}[ap]m)[–-](\d{1,2}:\d{2}[ap]m) - Available", title)
+                                    if match:
+                                        block_start_str = match.group(1)
+                                        block_end_str = match.group(2)
+                                        block_start_time = datetime.strptime(block_start_str, '%I:%M%p')
+                                        block_end_time = datetime.strptime(block_end_str, '%I:%M%p')
 
-                                # Check if this block is within the desired time range
-                                if desired_start_time <= block_start_time < desired_end_time:
-                                    available_time_blocks[block_start_time] = block
+                                        # Check if this block is within the desired time range
+                                        if desired_start_time <= block_start_time < desired_end_time:
+                                            available_time_blocks[block_start_time] = block
 
-                        # Check for required consecutive time blocks
-                        current_time = desired_start_time
-                        blocks_to_click = []
+                                # Check for required consecutive time blocks
+                                current_time = desired_start_time
+                                blocks_to_click = []
 
-                        while current_time < desired_end_time:
-                            block_element = available_time_blocks.get(current_time)
-                            if block_element:
-                                blocks_to_click.append(block_element)
-                                current_time += timedelta(minutes=30)
-                            else:
-                                print(
-                                    f"[Main] Missing time block at {current_time.strftime('%I:%M%p')} in row {row.get_attribute('class')}")
-                                break
+                                while current_time < desired_end_time:
+                                    block_element = available_time_blocks.get(current_time)
+                                    if block_element:
+                                        blocks_to_click.append(block_element)
+                                        current_time += timedelta(minutes=30)
+                                    else:
+                                        print(
+                                            f"[Main] Missing time block at {current_time.strftime('%I:%M%p')} in row {row.get_attribute('class')}")
+                                        break
 
-                        if current_time >= desired_end_time:
-                            # Found all required blocks in this row
-                            print(f"[Main] Found required time blocks in row {row.get_attribute('class')}")
-                            booking_successful = True
+                                if current_time >= desired_end_time:
+                                    # Found all required blocks in this row
+                                    print(f"[Main] Found required time blocks in row {row.get_attribute('class')}")
+                                    booking_successful = True
 
-                            # Click each block, refreshing before each click
-                            for block_element in blocks_to_click:
-                                if not click_element_with_retry(driver, block_element):
-                                    booking_successful = False
-                                    print("[Main] Failed to click one of the required blocks due to stale element.")
-                                    break
+                                    # Click each block, refreshing before each click
+                                    for block_element in blocks_to_click:
+                                        if not click_element_with_retry(driver, block_element):
+                                            booking_successful = False
+                                            print(
+                                                "[Main] Failed to click one of the required blocks due to stale element.")
+                                            break
 
-                            # Exit loop after successful booking
+                                    # Exit row loop after successful booking
+                                    if booking_successful:
+                                        break
+
+                            except StaleElementReferenceException:
+                                print("[Main] Retrying current row due to stale element reference...")
+                                time.sleep(1)
+                                continue  # Retry the current row up to 3 times
+
+                            # If successful, break out of retry loop for the current row
                             if booking_successful:
                                 break
 
+                        # If booking was successful, break out of the row processing loop
+                        if booking_successful:
+                            break
+
+                    # If booking was successful, break out of the main retry loop
                     if booking_successful:
                         break
                     else:
-                        print("[Main] Retrying row selection due to missing required blocks.")
+                        print("[Main] Retrying entire row selection due to missing required blocks.")
                         time.sleep(1)
 
                 except StaleElementReferenceException:
-                    print("[Main] Retrying due to stale element reference...")
+                    print("[Main] Retrying entire schedule loading due to stale element reference...")
                     time.sleep(1)
 
             if not booking_successful:
