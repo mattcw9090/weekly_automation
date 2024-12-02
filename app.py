@@ -217,9 +217,8 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         }
 
         starting_week_date = datetime.strptime(startingWeek, "%Y-%m-%d")
-        target_date = starting_week_date + timedelta(days=day_of_week_mapping[dayOfWeek])
-        booking_date = target_date.strftime("%Y-%m-%d")
-        print(f"[Main] Calculated booking date: {booking_date}")
+        booking_date = starting_week_date + timedelta(days=day_of_week_mapping[dayOfWeek])
+        print(f"[Main] Calculated booking date: {booking_date.strftime('%Y-%m-%d')}")
 
         # Handle modal if it appears
         try:
@@ -233,8 +232,8 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         # Navigate to the correct month and year on the calendar
         try:
             # Extract target month and year from booking_date
-            target_month = target_date.strftime("%B")
-            target_year = target_date.strftime("%Y")
+            target_month = booking_date.strftime("%B")
+            target_year = booking_date.strftime("%Y")
 
             while True:
                 # Find the calendar's current month and year
@@ -263,6 +262,10 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
         except Exception as e:
             print(f"An error occurred while navigating the calendar: {e}")
+
+        # ## TO DO IMPLEMENTATION ##
+        # now extract the day of the booking_date, and select the day on the calendar
+        # ##
 
         try:
             while True:
