@@ -203,22 +203,11 @@ function handleCourtTypeChange() {
 function updateEventListeners() {
     const tableBody = document.querySelector('#studentTable tbody');
 
-    tableBody.removeEventListener('click', tableBodyClickHandler);
-    tableBody.addEventListener('click', tableBodyClickHandler);
+    tableBody.removeEventListener('click', actionsHandler);
+    tableBody.addEventListener('click', actionsHandler);
 
     tableBody.removeEventListener('change', tableBodyChangeHandler);
     tableBody.addEventListener('change', tableBodyChangeHandler);
-}
-
-// Event delegation for click events in the table body
-function tableBodyClickHandler(event) {
-    if (event.target.classList.contains('delete-row')) {
-        deleteRow(event);
-    } else if (event.target.classList.contains('message-button')) {
-        alert('Message sent to student.');
-    } else if (event.target.classList.contains('buy-credits-button')) {
-        alert('Session booked successfully.');
-    }
 }
 
 // Event delegation for change events in the table body
@@ -321,7 +310,7 @@ function handleFileSelect(event) {
 }
 
 // Event delegation for click events in the table body
-function tableBodyClickHandler(event) {
+function actionsHandler(event) {
     if (event.target.classList.contains('delete-row')) {
         deleteRow(event);
     } else if (event.target.classList.contains('message-button')) {
