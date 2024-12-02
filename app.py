@@ -379,12 +379,22 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
             # Proceed with the booking as per your website's flow
             if booking_successful:
-                print("[Main] Consective Timeblock Selection Successful.")
+                print("[Main] Consecutive Timeblock Selection Successful.")
+
+                # Wait and click on the "Continue" button
+                continue_button = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, "//a[contains(@class, 'showRecapDialog') and contains(@title, 'Continue')]")))
+                click_element_with_retry(driver, continue_button)
+                print("[Main] Clicked on 'Continue' button.")
+
+                # Wait and click on the "BOOK" button
+                book_button = wait.until(EC.element_to_be_clickable((By.XPATH,
+                                                                     "//a[contains(@class, 'ui-state-default') and contains(@href, '#') and contains(text(), 'Book')]")))
+                click_element_with_retry(driver, book_button)
+                print("[Main] Clicked on 'BOOK' button.")
 
         except Exception as e:
             print(f"[Main] An error occurred while selecting timeblocks: {e}")
-
-        # Remaining logic goes here
 
         try:
             while True:
