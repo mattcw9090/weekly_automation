@@ -1,7 +1,5 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
-import calendar
-from datetime import datetime
 import json
 import time
 import re
@@ -10,13 +8,21 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import StaleElementReferenceException
 from webdriver_manager.chrome import ChromeDriverManager
 
 app = Flask(__name__, static_folder='static')
+
+
+def get_chrome_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 
 # Function to load cookies from a file
@@ -45,13 +51,7 @@ def selenium_buy_credits_task(credits_list):
     """
     Handles multiple buy credit actions grouped into tabs within a single browser window.
     """
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--disable-infobars")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    driver = get_chrome_driver()
 
     try:
         # Load Google cookies
@@ -170,13 +170,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
     """
     Handles court booking action
     """
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--disable-infobars")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    driver = get_chrome_driver()
 
     try:
         # Load Google cookies
