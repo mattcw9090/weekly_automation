@@ -174,22 +174,10 @@ def buy_credits():
         return "Invalid data received.", 400
 
     # Extract data from the request
-    studentName = data.get('studentName')
-    dayOfWeek = data.get('dayOfWeek')
-    courtLocation = data.get('courtLocation')
-    courtType = data.get('courtType')
-    sessionStart = data.get('sessionStart')
-    sessionEnd = data.get('sessionEnd')
     creditsToBuy = data.get('creditsToBuy')
 
     # For debugging purposes, print the received data
-    print("Received booking request for:")
-    print(f"Student Name: {studentName}")
-    print(f"Day of Week: {dayOfWeek}")
-    print(f"Court Location: {courtLocation}")
-    print(f"Court Type: {courtType}")
-    print(f"Session Start: {sessionStart}")
-    print(f"Session End: {sessionEnd}")
+    print("Received booking request:")
     print(f"Credits to Buy: {creditsToBuy}")
 
     # Parse the credits to buy
@@ -211,7 +199,33 @@ def buy_credits():
 
     print(f"Started buying process for {len(credits_list)} credits.")
 
-    return f"Buying credits for {studentName} is being processed in grouped tabs!"
+    return f"Buying credits in progress!"
+
+
+@app.route('/book-court', methods=['POST'])
+def book_court():
+    data = request.get_json()
+    if not data:
+        return "Invalid data received.", 400
+
+    # Extract data from the request
+    studentName = data.get('studentName')
+    dayOfWeek = data.get('dayOfWeek')
+    courtLocation = data.get('courtLocation')
+    courtType = data.get('courtType')
+    sessionStart = data.get('sessionStart')
+    sessionEnd = data.get('sessionEnd')
+
+    # For debugging purposes, print the received data
+    print("Received book court request:")
+    print(f"Student Name: {studentName}")
+    print(f"Day of Week: {dayOfWeek}")
+    print(f"Court Location: {courtLocation}")
+    print(f"Court Type: {courtType}")
+    print(f"Session Start: {sessionStart}")
+    print(f"Session End: {sessionEnd}")
+
+    return f"Booking court in progress!"
 
 
 if __name__ == '__main__':

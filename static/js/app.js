@@ -275,6 +275,7 @@ document.getElementById('addRow').addEventListener('click', () => {
         <td>
             <button type="button" class="message-button">Message</button>
             <button type="button" class="buy-credits-button">Buy Credits</button>
+            <button type="button" class="book-court-button">Book Court</button>
             <button type="button" class="delete-row">Delete</button>
         </td>
     `;
@@ -320,22 +321,8 @@ function actionsHandler(event) {
         const creditsCell = row.querySelector('.credits-to-buy');
         const creditsToBuy = creditsCell.innerHTML;
 
-        // Get other data if needed
-        const studentName = row.querySelector('.student-name').value;
-        const dayOfWeek = row.querySelector('.day-of-week').value;
-        const courtLocation = row.querySelector('.court-location').value;
-        const courtType = row.querySelector('.court-type').value;
-        const sessionStart = row.querySelector('.session-start').value;
-        const sessionEnd = row.querySelector('.session-end').value;
-
         // Prepare the data to send to the server
         const data = {
-            studentName,
-            dayOfWeek,
-            courtLocation,
-            courtType,
-            sessionStart,
-            sessionEnd,
             creditsToBuy
         };
 
@@ -353,7 +340,44 @@ function actionsHandler(event) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while booking the session.');
+            alert('An error occurred while buying credits.');
+        });
+    } else if (event.target.classList.contains('book-court-button')) {
+        const row = event.target.closest('tr');
+
+        // Retrieve data from row
+        const studentName = row.querySelector('.student-name').value;
+        const dayOfWeek = row.querySelector('.day-of-week').value;
+        const courtLocation = row.querySelector('.court-location').value;
+        const courtType = row.querySelector('.court-type').value;
+        const sessionStart = row.querySelector('.session-start').value;
+        const sessionEnd = row.querySelector('.session-end').value;
+
+        // Prepare the data to send to the server
+        const data = {
+            studentName,
+            dayOfWeek,
+            courtLocation,
+            courtType,
+            sessionStart,
+            sessionEnd
+        };
+
+        // Send the data to the server via POST request
+        fetch('/book-court', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.text())
+        .then(result => {
+            alert(result);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while booking court.');
         });
     }
 }
@@ -415,6 +439,7 @@ function loadConfigFile(data) {
             <td>
                 <button type="button" class="message-button">Message</button>
                 <button type="button" class="buy-credits-button">Buy Credits</button>
+                <button type="button" class="book-court-button">Book Court</button>
                 <button type="button" class="delete-row">Delete</button>
             </td>
         `;
