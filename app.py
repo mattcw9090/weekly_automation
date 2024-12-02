@@ -238,7 +238,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
             while True:
                 try:
                     # Re-locate the calendar header and title every iteration
-                    calendar_header = driver.find_element(By.CLASS_NAME, "ui-datepicker-header")
+                    calendar_header = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-header")))
                     calendar_title = calendar_header.find_element(By.CLASS_NAME, "ui-datepicker-title")
                     displayed_month = calendar_title.find_element(By.CLASS_NAME, "ui-datepicker-month").text
                     displayed_year = calendar_title.find_element(By.CLASS_NAME, "ui-datepicker-year").text
@@ -261,11 +261,6 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
                         prev_button.click()
                         print("[Main] Navigated to the previous month.")
 
-                    # Add a short wait to allow the DOM to update
-                    WebDriverWait(driver, 5).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-header"))
-                    )
-
                 except Exception as e:
                     print(f"An error occurred while navigating the calendar: {e}")
                     break
@@ -281,7 +276,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
             day_selector = "td[data-handler='selectDay'] a.ui-state-default"
 
             # Locate all day elements
-            day_elements = driver.find_elements(By.CSS_SELECTOR, day_selector)
+            day_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, day_selector)))
             day_found = False
 
             for day_element in day_elements:
@@ -298,7 +293,20 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         except Exception as e:
             print(f"An error occurred while selecting the day: {e}")
 
-        # TO DO IMPLEMENTATION: SELECTING TIMESLOT
+        ######## TO DO IMPLEMENTATION: SELECTING TIMESLOT
+        div_element = driver.find_element(By.CLASS_NAME, 'schemaWrapper')
+        rows = div_element.find_elements(By.XPATH, ".//tr[starts-with(@class, 'trSchemaLane_')]")
+        for row in rows:
+            try:
+                timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:00am–9:30am - Available')]")
+                timeblock.click()
+                timeblock = row.find_element(By.XPATH, ".//a[contains(@title, '9:30am–10:00am - Available')]")
+                timeblock.click()
+                break
+            except Exception as e:
+                # Handle exception if no such time block is found in the current row, continue to the next row
+                continue
+        #########
 
         try:
             while True:
