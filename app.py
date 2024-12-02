@@ -280,6 +280,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
             return False
 
         # Timeblock selection code
+        time.sleep(1)
         try:
             # Wait for the schedule wrapper to appear
             schema_wrapper = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'schemaWrapper')))
@@ -382,6 +383,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
                 print("[Main] Consecutive Timeblock Selection Successful.")
 
                 # Wait and click on the "Continue" button
+                time.sleep(1)
                 continue_button = wait.until(EC.element_to_be_clickable(
                     (By.XPATH, "//a[contains(@class, 'showRecapDialog') and contains(@title, 'Continue')]")))
                 click_element_with_retry(driver, continue_button)
