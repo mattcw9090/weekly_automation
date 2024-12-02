@@ -343,6 +343,7 @@ function actionsHandler(event) {
             alert('An error occurred while buying credits.');
         });
     } else if (event.target.classList.contains('book-court-button')) {
+        const startingWeek = document.getElementById('weekStarting').value;
         const row = event.target.closest('tr');
 
         // Retrieve data from row
@@ -354,6 +355,7 @@ function actionsHandler(event) {
 
         // Prepare the data to send to the server
         const data = {
+            startingWeek,
             dayOfWeek,
             courtLocation,
             courtType,

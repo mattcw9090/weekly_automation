@@ -190,6 +190,12 @@ def selenium_book_court_task(dayOfWeek, courtLocation, courtType, sessionStart, 
         print("[Main] Loaded PBA cookies and refreshed.")
 
         ## LOGIC TO BE IMPLEMENTED ##
+        # if courtLocation == "PBA Canningvale" and courtType == "Hebat Court":
+        #     select the button "CANNING VALE - HEBAT COURT"
+        # else if courtLocation == "PBA Canningvale" and courtType == "Super Court":
+        #     select the button "CANNING VALE - SUPER COURT"
+        # else if courtLocation == "PBA Malaga":
+        #     select the button "MALAGA"
 
         try:
             while True:
@@ -251,6 +257,7 @@ def book_court():
         return "Invalid data received.", 400
 
     # Extract data from the request
+    startingWeek = data.get('startingWeek')
     dayOfWeek = data.get('dayOfWeek')
     courtLocation = data.get('courtLocation')
     courtType = data.get('courtType')
@@ -259,6 +266,7 @@ def book_court():
 
     # For debugging purposes, print the received data
     print("Received book court request:")
+    print(f"Starting Week: {startingWeek}")
     print(f"Day of Week: {dayOfWeek}")
     print(f"Court Location: {courtLocation}")
     print(f"Court Type: {courtType}")
