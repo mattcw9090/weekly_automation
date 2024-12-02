@@ -39,7 +39,7 @@ def load_cookies(driver, cookie_file):
 
 def selenium_buy_credits_task(credits_list):
     """
-    Handles multiple booking actions grouped into tabs within a single browser window.
+    Handles multiple buy credit actions grouped into tabs within a single browser window.
     """
     chrome_options = Options()
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -162,6 +162,46 @@ def selenium_buy_credits_task(credits_list):
         print("Browser closed.")
 
 
+def selenium_book_court_task():
+    """
+    Handles court booking action
+    """
+    chrome_options = Options()
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+    try:
+        # Load Google cookies
+        driver.get("https://www.google.com")
+        driver.delete_all_cookies()
+        load_cookies(driver, "google_cookies.json")
+        driver.refresh()
+        print("[Main] Loaded Google cookies and refreshed.")
+
+        # Load PBA cookies
+        driver.get("https://pba.yepbooking.com.au")
+        driver.delete_all_cookies()
+        load_cookies(driver, "pba_cookies.json")
+        driver.refresh()
+        print("[Main] Loaded PBA cookies and refreshed.")
+
+        try:
+            while True:
+                time.sleep(5000)  # Keeps the script running indefinitely until manually stopped
+        except KeyboardInterrupt:
+            print("Manual interruption received. Closing browser.")
+
+    except Exception as e:
+        print(f"An error occurred during court booking: {e}")
+    finally:
+        driver.quit()
+        print("Browser closed.")
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -224,6 +264,9 @@ def book_court():
     print(f"Court Type: {courtType}")
     print(f"Session Start: {sessionStart}")
     print(f"Session End: {sessionEnd}")
+
+    # Run all bookings in grouped tabs
+    selenium_book_court_task()
 
     return f"Booking court in progress!"
 
