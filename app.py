@@ -35,7 +35,7 @@ def load_cookies(driver, cookie_file):
         except Exception as e:
             print(f"Error adding cookie: {e}")
 
-def selenium_booking_task_grouped(credits_list):
+def selenium_buy_credits_task(credits_list):
     """
     Handles multiple booking actions grouped into tabs within a single browser window.
     """
@@ -44,13 +44,11 @@ def selenium_booking_task_grouped(credits_list):
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    # Uncomment the next line to run headless
-    # chrome_options.add_argument("--headless")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
     try:
-        # Load initial page to set domain for cookies
+        # Load Google cookies
         driver.get("https://www.google.com")
         driver.delete_all_cookies()
         load_cookies(driver, "google_cookies.json")
@@ -64,12 +62,9 @@ def selenium_booking_task_grouped(credits_list):
         driver.refresh()
         print("[Main] Loaded PBA cookies and refreshed.")
 
-        print("[Main] Cookies loaded successfully.")
-
         # Open a new tab for each booking
         for idx, credit in enumerate(credits_list):
             if idx > 0:
-                # Open a new tab
                 driver.execute_script("window.open('');")
                 print(f"[Tab {idx + 1}] Opened a new tab.")
 
@@ -78,12 +73,9 @@ def selenium_booking_task_grouped(credits_list):
             print(f"[Tab {idx + 1}] Switched to tab {idx + 1}.")
 
             # Initialize WebDriverWait for each tab
-            wait = WebDriverWait(driver, 60)  # Increased timeout to handle animations
+            wait = WebDriverWait(driver, 50)
 
-            # Perform booking action in this tab
             try:
-                print(f"[Tab {idx + 1}] Starting booking process for credit amount: ${credit['amount']:.2f}")
-
                 # Navigate to the credit list page
                 driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
                 print(f"[Tab {idx + 1}] Navigated to credit list page.")
@@ -168,7 +160,7 @@ def selenium_booking_task_grouped(credits_list):
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # Assumes index.html is in the templates folder
+    return render_template('index.html')
 
 @app.route('/buy-credits', methods=['POST'])
 def buy_credits():
@@ -210,7 +202,7 @@ def buy_credits():
             print(f"Could not parse line: {line.strip()}")
 
     # Run all bookings in grouped tabs
-    threading.Thread(target=selenium_booking_task_grouped, args=(credits_list,)).start()
+    threading.Thread(target=selenium_buy_credits_task, args=(credits_list,)).start()
 
     print(f"Started buying process for {len(credits_list)} credits.")
 
