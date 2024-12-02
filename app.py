@@ -12,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 
 # Function to load cookies from a file
 def load_cookies(driver, cookie_file):
