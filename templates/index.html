@@ -373,7 +373,7 @@
         reader.onload = function(e) {
             try {
                 const configData = JSON.parse(e.target.result);
-                prefillForm(configData);
+                loadConfigFile(configData);
             } catch (error) {
                 alert('Invalid configuration file. Please ensure it is a valid JSON file.');
                 console.error(error);
@@ -422,7 +422,7 @@
             })
             .then(response => response.text())
             .then(result => {
-                alert(result); // Display server response
+                alert(result);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -432,7 +432,7 @@
     }
 
     // Prefill the form with data from the configuration file
-    function prefillForm(data) {
+    function loadConfigFile(data) {
         // Set the week starting date
         document.getElementById('weekStarting').value = data.weekStarting || '';
 
