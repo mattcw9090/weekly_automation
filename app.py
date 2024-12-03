@@ -472,11 +472,15 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
             f"on {dayOfWeek} from {startTime} to {endTime}?"
         )
 
-        # Wait for the message input box and type the message
+        # Wait for the specific message input box and type the message
         try:
             message_input = wait.until(
-                EC.presence_of_element_located((By.TAG_NAME, "textarea"))
+                EC.presence_of_element_located(
+                    (By.XPATH, "//div[@aria-label='Message' and @role='textbox']")
+                )
             )
+            # Type the message
+            message_input.click()
             message_input.send_keys(message)
             print(f"Typed the message: {message}")
 
