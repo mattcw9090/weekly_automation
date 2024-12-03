@@ -366,31 +366,49 @@ function actionsHandler(event) {
             alert('Please select a student.');
             return;
         }
+
         // Find the student in window.studentsData
         const student = window.studentsData.find(s => s.name === studentName);
         if (student) {
+            // Retrieve additional data from the row
+            const courtLocation = row.querySelector('.court-location').value;
+            const dayOfWeek = row.querySelector('.day-of-week').value;
+            const sessionStart = row.querySelector('.session-start').value;
+            const sessionEnd = row.querySelector('.session-end').value;
+
+            // Ensure all required fields are filled
+            if (!courtLocation || !dayOfWeek || !sessionStart || !sessionEnd) {
+                alert('Please complete all session details before messaging.');
+                return;
+            }
+
             // Prepare the data to send to the server
             const data = {
                 contactPreference: student.contactPreference,
-                contactInfo: student.contactInfo
+                contactInfo: student.contactInfo,
+                studentName: studentName,
+                courtLocation: courtLocation,
+                dayOfWeek: dayOfWeek,
+                startTime: sessionStart,
+                endTime: sessionEnd,
             };
 
             // Send the data to the server via POST request
             fetch('/message-student', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
             })
-            .then(response => response.text())
-            .then(result => {
-                alert(result);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while messaging the student.');
-            });
+                .then(response => response.text())
+                .then(result => {
+                    alert(result);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while messaging the student.');
+                });
         } else {
             alert('Student data not found.');
         }

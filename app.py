@@ -416,7 +416,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         print("Browser closed.")
 
 
-def selenium_message_student_task(contactPreference, contactInfo):
+def selenium_message_student_task(contactPreference, contactInfo, studentName, courtLocation, dayOfWeek, startTime, endTime):
     """
     Handles opening the messaging platform and sending a message to the student on Instagram.
     """
@@ -451,6 +451,45 @@ def selenium_message_student_task(contactPreference, contactInfo):
             print(f"Clicked on the 'Message' button for {instagram_handle}.")
         except Exception as e:
             print(f"Could not find or click the 'Message' button: {e}")
+            return
+
+        # Wait for 2 seconds
+        time.sleep(2)
+
+        # Click on the "Not Now" button if it appears
+        try:
+            not_now_button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, "//button[text()='Not Now']"))
+            )
+            not_now_button.click()
+            print("Clicked on 'Not Now' button.")
+        except Exception as e:
+            print(f"Could not find or click the 'Not Now' button: {e}")
+
+        # Craft the message
+        message = (
+            f"Hey {studentName}, are you down to train at {courtLocation}, "
+            f"on {dayOfWeek} from {startTime} to {endTime}?"
+        )
+
+        # Wait for the message input box and type the message
+        try:
+            message_input = wait.until(
+                EC.presence_of_element_located((By.TAG_NAME, "textarea"))
+            )
+            message_input.send_keys(message)
+            print(f"Typed the message: {message}")
+
+            # Find and click the send button
+            send_button = wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(@class, '_abl-')]")  # XPath for the Send button
+                )
+            )
+            send_button.click()
+            print("Message sent successfully.")
+        except Exception as e:
+            print(f"Could not find the message input box or send the message: {e}")
 
         # Keep the browser open for further actions
         try:
@@ -552,14 +591,29 @@ def message_student():
     # Extract data from the request
     contactPreference = data.get('contactPreference')
     contactInfo = data.get('contactInfo')
+    studentName = data.get('studentName')
+    courtLocation = data.get('courtLocation')
+    dayOfWeek = data.get('dayOfWeek')
+    startTime = data.get('startTime')
+    endTime = data.get('endTime')
+
+    # Ensure all required fields are provided
+    if not all([contactPreference, contactInfo, studentName, courtLocation, dayOfWeek, startTime, endTime]):
+        return "Missing required fields.", 400
 
     # For debugging purposes, print the received data
     print("Received message student request:")
     print(f"Contact Preference: {contactPreference}")
     print(f"Contact Info: {contactInfo}")
+    print(f"Student Name: {studentName}")
+    print(f"Court Location: {courtLocation}")
+    print(f"Day of Week: {dayOfWeek}")
+    print(f"Start Time: {startTime}")
+    print(f"End Time: {endTime}")
 
     # Run the messaging task in a separate thread
-    threading.Thread(target=selenium_message_student_task, args=(contactPreference, contactInfo)).start()
+    threading.Thread(target=selenium_message_student_task, args=(
+        contactPreference, contactInfo, studentName, courtLocation, dayOfWeek, startTime, endTime)).start()
 
     return f"Messaging student via {contactPreference} in progress!"
 
