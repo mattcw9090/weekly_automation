@@ -418,25 +418,39 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
 def selenium_message_student_task(contactPreference, contactInfo):
     """
-    Handles opening the messaging platform and injecting cookies.
+    Handles opening the messaging platform and sending a message to the student on Instagram.
     """
     driver = get_chrome_driver()
     try:
         if contactPreference == "Instagram":
-            url = "https://www.instagram.com/direct/inbox/"
+            url = "https://www.instagram.com/"
             cookie_file = "instagram_cookies.json"
-        elif contactPreference == "WhatsApp":
-            url = "https://web.whatsapp.com/"
-            cookie_file = "whatsapp_cookies.json"
         else:
             print(f"Unsupported contact preference: {contactPreference}")
             return
 
-        load_and_refresh_cookies(driver, "https://www.google.com", "google_cookies.json")
+        # Load Instagram and inject cookies
         load_and_refresh_cookies(driver, url, cookie_file)
 
-        # For now, we just open the page with cookies loaded.
-        print(f"Opened {url} with cookies loaded for {contactPreference}.")
+        # Remove the '@' from the contactInfo if it exists
+        instagram_handle = contactInfo.lstrip('@')
+        instagram_handle_url = f"https://www.instagram.com/{instagram_handle}/"
+
+        # Navigate to the Instagram handle's page
+        driver.get(instagram_handle_url)
+        print(f"Navigated to Instagram handle: {instagram_handle_url}")
+
+        wait = WebDriverWait(driver, 30)
+
+        # Wait for the "Message" button to be clickable and click it
+        try:
+            message_button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, "//div[text()='Message']"))
+            )
+            message_button.click()
+            print(f"Clicked on the 'Message' button for {instagram_handle}.")
+        except Exception as e:
+            print(f"Could not find or click the 'Message' button: {e}")
 
         # Keep the browser open for further actions
         try:
