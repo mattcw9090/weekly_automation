@@ -22,7 +22,12 @@ def get_chrome_driver():
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+    # Ensure ChromeDriver compatibility with the installed browser version
+    return webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=chrome_options
+    )
 
 
 # Function to load cookies from a file
@@ -411,6 +416,42 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
         print("Browser closed.")
 
 
+def selenium_message_student_task(contactPreference, contactInfo):
+    """
+    Handles opening the messaging platform and injecting cookies.
+    """
+    driver = get_chrome_driver()
+    try:
+        if contactPreference == "Instagram":
+            url = "https://www.instagram.com/direct/inbox/"
+            cookie_file = "instagram_cookies.json"
+        elif contactPreference == "WhatsApp":
+            url = "https://web.whatsapp.com/"
+            cookie_file = "whatsapp_cookies.json"
+        else:
+            print(f"Unsupported contact preference: {contactPreference}")
+            return
+
+        load_and_refresh_cookies(driver, "https://www.google.com", "google_cookies.json")
+        load_and_refresh_cookies(driver, url, cookie_file)
+
+        # For now, we just open the page with cookies loaded.
+        print(f"Opened {url} with cookies loaded for {contactPreference}.")
+
+        # Keep the browser open for further actions
+        try:
+            while True:
+                time.sleep(5000)  # Keeps the script running indefinitely until manually stopped
+        except KeyboardInterrupt:
+            print("Manual interruption received. Closing browser.")
+
+    except Exception as e:
+        print(f"An error occurred during messaging: {e}")
+    finally:
+        driver.quit()
+        print("Browser closed.")
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -481,11 +522,32 @@ def book_court():
     print(f"Session Start: {sessionStart}")
     print(f"Session End: {sessionEnd}")
 
-    # Run all bookings in grouped tabs
+    # Run the booking task in a separate thread
     threading.Thread(target=selenium_book_court_task, args=(
         startingWeek, dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd)).start()
 
     return f"Booking court in progress!"
+
+
+@app.route('/message-student', methods=['POST'])
+def message_student():
+    data = request.get_json()
+    if not data:
+        return "Invalid data received.", 400
+
+    # Extract data from the request
+    contactPreference = data.get('contactPreference')
+    contactInfo = data.get('contactInfo')
+
+    # For debugging purposes, print the received data
+    print("Received message student request:")
+    print(f"Contact Preference: {contactPreference}")
+    print(f"Contact Info: {contactInfo}")
+
+    # Run the messaging task in a separate thread
+    threading.Thread(target=selenium_message_student_task, args=(contactPreference, contactInfo)).start()
+
+    return f"Messaging student via {contactPreference} in progress!"
 
 
 if __name__ == '__main__':

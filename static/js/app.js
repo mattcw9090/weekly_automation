@@ -369,7 +369,28 @@ function actionsHandler(event) {
         // Find the student in window.studentsData
         const student = window.studentsData.find(s => s.name === studentName);
         if (student) {
-            alert(`Message sent to ${student.name} via ${student.contactPreference}: ${student.contactInfo}`);
+            // Prepare the data to send to the server
+            const data = {
+                contactPreference: student.contactPreference,
+                contactInfo: student.contactInfo
+            };
+
+            // Send the data to the server via POST request
+            fetch('/message-student', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.text())
+            .then(result => {
+                alert(result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while messaging the student.');
+            });
         } else {
             alert('Student data not found.');
         }
