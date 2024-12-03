@@ -421,6 +421,10 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
     Handles opening the messaging platform and sending a message to the student on Instagram.
     """
 
+    # Convert start and end times to 12-hour format with AM/PM
+    start_time_12hr = datetime.strptime(startTime, '%H:%M').strftime('%I:%M %p')
+    end_time_12hr = datetime.strptime(endTime, '%H:%M').strftime('%I:%M %p')
+
     # Craft the message
     message = (
         f"Hey {studentName}, are you down to train at {courtLocation}, "
@@ -477,10 +481,6 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
             except Exception as e:
                 print(f"Could not find or click the 'Not Now' button: {e}")
 
-            # Convert start and end times to 12-hour format with AM/PM
-            start_time_12hr = datetime.strptime(startTime, '%H:%M').strftime('%I:%M %p')
-            end_time_12hr = datetime.strptime(endTime, '%H:%M').strftime('%I:%M %p')
-
             # Wait for the specific message input box and type the message
             try:
                 message_input = wait.until(
@@ -505,7 +505,51 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
                 print(f"Could not find the message input box or send the message: {e}")
 
         elif contactPreference == "WhatsApp":
-        # CONTINUE IMPLEMENTING LOGIC FROM HERE
+            try:
+                # Step 1: Wait for and click the "New Chat" button
+                wait = WebDriverWait(driver, 30)
+                new_chat_button = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, "//span[@data-icon='new-chat-outline']"))
+                )
+                new_chat_button.click()
+                print("Clicked on 'New Chat' button.")
+
+                # Step 2: Wait for the input box to appear
+                contact_input = wait.until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//p[@class='selectable-text copyable-text x15bjb6t x1n2onr6']")
+                    )
+                )
+                contact_input.click()
+                print("Contact input box found.")
+
+                # Step 3: Type the contact number
+                contact_input.send_keys(contactInfo)
+                print(f"Typed the contact number: {contactInfo}")
+
+                # Step 4: Select the chat (press Enter)
+                contact_input.send_keys(Keys.ENTER)
+                print("Selected chat with the contact number.")
+
+                # Step 5: Wait for the message box to appear and type the message
+                message_box = wait.until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//div[@title='Type a message' and @role='textbox']")
+                    )
+                )
+                message_box.click()
+                message_box.send_keys(message)
+                print(f"Typed the message: {message}")
+
+                # Step 6: Click the send button
+                send_button = driver.find_element(
+                    By.XPATH, "//span[@data-icon='send']"
+                )
+                send_button.click()
+                print("Message sent successfully on WhatsApp.")
+
+            except Exception as e:
+                print(f"Error during WhatsApp messaging: {e}")
 
         # Keep the browser open for further actions
         try:
