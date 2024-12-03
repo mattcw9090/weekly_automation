@@ -418,7 +418,7 @@ def selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, 
 
 def selenium_message_student_task(contactPreference, contactInfo, studentName, courtLocation, dayOfWeek, startTime, endTime):
     """
-    Handles opening the messaging platform and sending a message to the student on Instagram.
+    Handles opening the messaging platform and sending a message to the student on Instagram or WhatsApp.
     """
 
     # Convert start and end times to 12-hour format with AM/PM
@@ -431,22 +431,15 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
         f"on {dayOfWeek} from {start_time_12hr} to {end_time_12hr}?"
     )
 
-    driver = get_chrome_driver()
-    try:
-        if contactPreference == "Instagram":
+    if contactPreference == "Instagram":
+        driver = get_chrome_driver()
+        try:
             url = "https://www.instagram.com/"
             cookie_file = "instagram_cookies.json"
-        elif contactPreference == "WhatsApp":
-            url = "https://web.whatsapp.com/"
-            cookie_file = "whatsapp_cookies.json"
-        else:
-            print(f"Unsupported contact preference: {contactPreference}")
-            return
 
-        # Inject cookies
-        load_and_refresh_cookies(driver, url, cookie_file)
+            # Inject cookies
+            load_and_refresh_cookies(driver, url, cookie_file)
 
-        if contactPreference == "Instagram":
             # Remove the '@' from the contactInfo if it exists
             instagram_handle = contactInfo.lstrip('@')
             instagram_handle_url = f"https://www.instagram.com/{instagram_handle}/"
@@ -467,9 +460,6 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
             except Exception as e:
                 print(f"Could not find or click the 'Message' button: {e}")
                 return
-
-            # Wait for 2 seconds
-            time.sleep(2)
 
             # Click on the "Not Now" button if it appears
             try:
@@ -496,7 +486,7 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
                 # Find and click the send button
                 send_button = wait.until(
                     EC.element_to_be_clickable(
-                        (By.XPATH, "//button[contains(@class, '_abl-')]")  # XPath for the Send button
+                        (By.XPATH, "//button[contains(@class, '_abl-')]")
                     )
                 )
                 send_button.click()
@@ -504,65 +494,34 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
             except Exception as e:
                 print(f"Could not find the message input box or send the message: {e}")
 
-        elif contactPreference == "WhatsApp":
-            try:
-                # Step 1: Wait for and click the "New Chat" button
-                wait = WebDriverWait(driver, 30)
-                new_chat_button = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, "//span[@data-icon='new-chat-outline']"))
-                )
-                new_chat_button.click()
-                print("Clicked on 'New Chat' button.")
+        except Exception as e:
+            print(f"An error occurred during messaging: {e}")
+        finally:
+            driver.quit()
+            print("Browser closed.")
 
-                # Step 2: Wait for the input box to appear
-                contact_input = wait.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, "//p[@class='selectable-text copyable-text x15bjb6t x1n2onr6']")
-                    )
-                )
-                contact_input.click()
-                print("Contact input box found.")
-
-                # Step 3: Type the contact number
-                contact_input.send_keys(contactInfo)
-                print(f"Typed the contact number: {contactInfo}")
-
-                # Step 4: Select the chat (press Enter)
-                contact_input.send_keys(Keys.ENTER)
-                print("Selected chat with the contact number.")
-
-                # Step 5: Wait for the message box to appear and type the message
-                message_box = wait.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, "//div[@title='Type a message' and @role='textbox']")
-                    )
-                )
-                message_box.click()
-                message_box.send_keys(message)
-                print(f"Typed the message: {message}")
-
-                # Step 6: Click the send button
-                send_button = driver.find_element(
-                    By.XPATH, "//span[@data-icon='send']"
-                )
-                send_button.click()
-                print("Message sent successfully on WhatsApp.")
-
-            except Exception as e:
-                print(f"Error during WhatsApp messaging: {e}")
-
-        # Keep the browser open for further actions
+    elif contactPreference == "WhatsApp":
         try:
-            while True:
-                time.sleep(5000)  # Keeps the script running indefinitely until manually stopped
-        except KeyboardInterrupt:
-            print("Manual interruption received. Closing browser.")
+            phone_number = contactInfo.strip()
+            if not phone_number.startswith('+'):
+                print("Invalid phone number format. Must start with '+'.")
+                return
 
-    except Exception as e:
-        print(f"An error occurred during messaging: {e}")
-    finally:
-        driver.quit()
-        print("Browser closed.")
+            # Send the message instantly using pywhatkit
+            pywhatkit.sendwhatmsg_instantly(
+                phone_no=phone_number,
+                message=message,
+                wait_time=10,     # Time to wait after opening WhatsApp Web
+                tab_close=True,   # Close the tab after sending the message
+                close_time=3      # Time to wait before closing the tab
+            )
+            print(f"WhatsApp message sent to {phone_number}.")
+
+        except Exception as e:
+            print(f"Error during WhatsApp messaging: {e}")
+    else:
+        print(f"Unsupported contact preference: {contactPreference}")
+        return
 
 
 @app.route('/')
