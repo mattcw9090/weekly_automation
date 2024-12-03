@@ -420,80 +420,92 @@ def selenium_message_student_task(contactPreference, contactInfo, studentName, c
     """
     Handles opening the messaging platform and sending a message to the student on Instagram.
     """
+
+    # Craft the message
+    message = (
+        f"Hey {studentName}, are you down to train at {courtLocation}, "
+        f"on {dayOfWeek} from {start_time_12hr} to {end_time_12hr}?"
+    )
+
     driver = get_chrome_driver()
     try:
         if contactPreference == "Instagram":
             url = "https://www.instagram.com/"
             cookie_file = "instagram_cookies.json"
+        elif contactPreference == "WhatsApp":
+            url = "https://web.whatsapp.com/"
+            cookie_file = "whatsapp_cookies.json"
         else:
             print(f"Unsupported contact preference: {contactPreference}")
             return
 
-        # Load Instagram and inject cookies
+        # Inject cookies
         load_and_refresh_cookies(driver, url, cookie_file)
 
-        # Remove the '@' from the contactInfo if it exists
-        instagram_handle = contactInfo.lstrip('@')
-        instagram_handle_url = f"https://www.instagram.com/{instagram_handle}/"
+        if contactPreference == "Instagram":
+            # Remove the '@' from the contactInfo if it exists
+            instagram_handle = contactInfo.lstrip('@')
+            instagram_handle_url = f"https://www.instagram.com/{instagram_handle}/"
 
-        # Navigate to the Instagram handle's page
-        driver.get(instagram_handle_url)
-        print(f"Navigated to Instagram handle: {instagram_handle_url}")
+            # Navigate to the Instagram handle's page
+            driver.get(instagram_handle_url)
+            print(f"Navigated to Instagram handle: {instagram_handle_url}")
 
-        wait = WebDriverWait(driver, 30)
+            wait = WebDriverWait(driver, 30)
 
-        # Wait for the "Message" button to be clickable and click it
-        try:
-            message_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//div[text()='Message']"))
-            )
-            message_button.click()
-            print(f"Clicked on the 'Message' button for {instagram_handle}.")
-        except Exception as e:
-            print(f"Could not find or click the 'Message' button: {e}")
-            return
-
-        # Wait for 2 seconds
-        time.sleep(2)
-
-        # Click on the "Not Now" button if it appears
-        try:
-            not_now_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[text()='Not Now']"))
-            )
-            not_now_button.click()
-            print("Clicked on 'Not Now' button.")
-        except Exception as e:
-            print(f"Could not find or click the 'Not Now' button: {e}")
-
-        # Craft the message
-        message = (
-            f"Hey {studentName}, are you down to train at {courtLocation}, "
-            f"on {dayOfWeek} from {startTime} to {endTime}?"
-        )
-
-        # Wait for the specific message input box and type the message
-        try:
-            message_input = wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//div[@aria-label='Message' and @role='textbox']")
+            # Wait for the "Message" button to be clickable and click it
+            try:
+                message_button = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, "//div[text()='Message']"))
                 )
-            )
-            # Type the message
-            message_input.click()
-            message_input.send_keys(message)
-            print(f"Typed the message: {message}")
+                message_button.click()
+                print(f"Clicked on the 'Message' button for {instagram_handle}.")
+            except Exception as e:
+                print(f"Could not find or click the 'Message' button: {e}")
+                return
 
-            # Find and click the send button
-            send_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(@class, '_abl-')]")  # XPath for the Send button
+            # Wait for 2 seconds
+            time.sleep(2)
+
+            # Click on the "Not Now" button if it appears
+            try:
+                not_now_button = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[text()='Not Now']"))
                 )
-            )
-            send_button.click()
-            print("Message sent successfully.")
-        except Exception as e:
-            print(f"Could not find the message input box or send the message: {e}")
+                not_now_button.click()
+                print("Clicked on 'Not Now' button.")
+            except Exception as e:
+                print(f"Could not find or click the 'Not Now' button: {e}")
+
+            # Convert start and end times to 12-hour format with AM/PM
+            start_time_12hr = datetime.strptime(startTime, '%H:%M').strftime('%I:%M %p')
+            end_time_12hr = datetime.strptime(endTime, '%H:%M').strftime('%I:%M %p')
+
+            # Wait for the specific message input box and type the message
+            try:
+                message_input = wait.until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//div[@aria-label='Message' and @role='textbox']")
+                    )
+                )
+                # Type the message
+                message_input.click()
+                message_input.send_keys(message)
+                print(f"Typed the message: {message}")
+
+                # Find and click the send button
+                send_button = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, "//button[contains(@class, '_abl-')]")  # XPath for the Send button
+                    )
+                )
+                send_button.click()
+                print("Message sent successfully.")
+            except Exception as e:
+                print(f"Could not find the message input box or send the message: {e}")
+
+        elif contactPreference == "WhatsApp":
+        # CONTINUE IMPLEMENTING LOGIC FROM HERE
 
         # Keep the browser open for further actions
         try:
