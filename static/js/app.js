@@ -225,12 +225,50 @@ function tableBodyChangeHandler(event) {
     }
 }
 
-// Add new row
+// Fetch students data and store globally
+window.studentsData = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Fetch students data
+    fetch('/students')
+        .then(response => response.json())
+        .then(studentsData => {
+            // Store studentsData globally
+            window.studentsData = studentsData;
+
+            // Now initialize the form
+            document.getElementById('addRow').click();
+            updateEventListeners();
+        })
+        .catch(error => {
+            console.error('Error fetching students data:', error);
+        });
+});
+
+// Function to populate student name dropdown
+function populateStudentNameDropdown(selectElement) {
+    const studentsData = window.studentsData || [];
+    selectElement.innerHTML = '<option value="">Select Student</option>';
+    studentsData.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.name;
+        option.textContent = student.name;
+        option.dataset.contactPreference = student.contactPreference;
+        option.dataset.contactInfo = student.contactInfo;
+        selectElement.appendChild(option);
+    });
+}
+
+// Modify addRow to include student name dropdown
 document.getElementById('addRow').addEventListener('click', () => {
     const tableBody = document.querySelector('#studentTable tbody');
     const newRow = document.createElement('tr');
     newRow.innerHTML = `
-        <td><input type="text" class="student-name" name="studentName[]" required></td>
+        <td>
+            <select name="studentName[]" class="student-name" required>
+                <!-- options will be populated via JavaScript -->
+            </select>
+        </td>
         <td>
             <select name="dayOfWeek[]" class="day-of-week" required>
                 <option value="">Select Day</option>
@@ -280,6 +318,12 @@ document.getElementById('addRow').addEventListener('click', () => {
         </td>
     `;
     tableBody.appendChild(newRow);
+
+    // Now populate the student name dropdown
+    const studentNameSelect = newRow.querySelector('.student-name');
+    populateStudentNameDropdown(studentNameSelect);
+
+    // Existing code...
     populateTimeDropdowns(newRow);
     updateCredits();
 });
@@ -315,7 +359,20 @@ function actionsHandler(event) {
     if (event.target.classList.contains('delete-row')) {
         deleteRow(event);
     } else if (event.target.classList.contains('message-button')) {
-        alert('Message sent to student.');
+        const row = event.target.closest('tr');
+        const studentNameSelect = row.querySelector('.student-name');
+        const studentName = studentNameSelect.value;
+        if (!studentName) {
+            alert('Please select a student.');
+            return;
+        }
+        // Find the student in window.studentsData
+        const student = window.studentsData.find(s => s.name === studentName);
+        if (student) {
+            alert(`Message sent to ${student.name} via ${student.contactPreference}: ${student.contactInfo}`);
+        } else {
+            alert('Student data not found.');
+        }
     } else if (event.target.classList.contains('buy-credits-button')) {
         const row = event.target.closest('tr');
         const creditsCell = row.querySelector('.credits-to-buy');
@@ -394,7 +451,11 @@ function loadConfigFile(data) {
     data.sessions.forEach(session => {
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
-            <td><input type="text" class="student-name" name="studentName[]" required></td>
+            <td>
+                <select name="studentName[]" class="student-name" required>
+                    <!-- options will be populated via JavaScript -->
+                </select>
+            </td>
             <td>
                 <select name="dayOfWeek[]" class="day-of-week" required>
                     <option value="">Select Day</option>
@@ -447,8 +508,12 @@ function loadConfigFile(data) {
 
         const lastRow = tableBody.lastElementChild;
 
+        // Populate the student name dropdown and set selected value
+        const studentNameSelect = lastRow.querySelector('.student-name');
+        populateStudentNameDropdown(studentNameSelect);
+        studentNameSelect.value = session.studentName || '';
+
         // Set the values
-        lastRow.querySelector('.student-name').value = session.studentName || '';
         lastRow.querySelector('.day-of-week').value = session.dayOfWeek || '';
         lastRow.querySelector('.court-location').value = session.courtLocation || '';
         lastRow.querySelector('.court-type').value = session.courtType || '';
@@ -466,6 +531,10 @@ function loadConfigFile(data) {
 
         // Populate time dropdowns with selected times
         populateTimeDropdowns(lastRow, session.sessionStart || '', session.sessionEnd || '');
+
+        // Set status checkboxes
+        lastRow.querySelector('input[name="statusMessaged[]"]').checked = session.statusMessaged || false;
+        lastRow.querySelector('input[name="statusBooked[]"]').checked = session.statusBooked || false;
     });
 
     updateEventListeners();
@@ -480,7 +549,7 @@ document.getElementById('saveConfigButton').addEventListener('click', async () =
     };
 
     document.querySelectorAll('#studentTable tbody tr').forEach(row => {
-        const studentName = row.querySelector('input[name="studentName[]"]').value;
+        const studentName = row.querySelector('.student-name').value;
         const dayOfWeek = row.querySelector('.day-of-week').value;
         const courtLocation = row.querySelector('.court-location').value;
         const sessionStart = row.querySelector('.session-start').value;
@@ -538,10 +607,4 @@ document.getElementById('saveConfigButton').addEventListener('click', async () =
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(url);
     }
-});
-
-// Initialize the form on page load
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('addRow').click();
-    updateEventListeners();
 });

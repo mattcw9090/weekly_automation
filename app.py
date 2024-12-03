@@ -416,6 +416,13 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/students')
+def get_students():
+    with open('students.json', 'r') as f:
+        students_data = json.load(f)
+    return jsonify(students_data)
+
+
 @app.route('/buy-credits', methods=['POST'])
 def buy_credits():
     data = request.get_json()
@@ -475,7 +482,8 @@ def book_court():
     print(f"Session End: {sessionEnd}")
 
     # Run all bookings in grouped tabs
-    selenium_book_court_task(startingWeek, dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd)
+    threading.Thread(target=selenium_book_court_task, args=(
+        startingWeek, dayOfWeek, courtLocation, courtType, sessionStart, sessionEnd)).start()
 
     return f"Booking court in progress!"
 
