@@ -1,0 +1,15 @@
+{
+    "weekStarting": "2024-12-23",
+    "sessions": [
+        {
+            "studentName": "Monna",
+            "dayOfWeek": "Tuesday",
+            "courtLocation": "PBA Canningvale",
+            "sessionStart": "11:00",
+            "sessionEnd": "13:00",
+            "courtType": "Hebat Court",
+            "statusMessaged": false,
+            "statusBooked": false
+        }
+    ]
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Table for Student Sessions</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .hidden {
+            display: none;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 2px;
+        }
+        option[disabled] {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dynamic Table for Student Sessions</h1>
+    <form id="sessionForm">
+        <label for="weekStarting">Week Starting:</label>
+        <input type="date" id="weekStarting" name="weekStarting" required>
+        <br><br>
+        <table id="studentTable">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Day of the Week</th>
+                    <th>Court Location</th>
+                    <th>Court Type</th>
+                    <th>Session Start</th>
+                    <th>Session End</th>
+                    <th>Credits to Buy</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added dynamically -->
+            </tbody>
+        </table>
+        <button type="button" id="addRow">Add Row</button>
+        <button type="button" id="loadConfigButton">Load Config</button>
+        <input type="file" id="configFileInput" accept=".json" style="display: none;">
+        <button type="button" id="saveConfigButton">Save Config</button>
+    </form>
+
+    <script src="/static/js/app.js"></script>
+
+</body>
+</html>
