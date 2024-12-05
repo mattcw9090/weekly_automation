@@ -7,29 +7,28 @@ function convertTimeToMinutes(timeStr) {
 // Data for opening and closing times based on location and day
 const locationSchedule = {
     'PBA Malaga': {
-        weekdays: { opening: 13, closing: 22 },
-        weekend: { opening: 9, closing: 22 }
+        'Monday': { opening: 13, closing: 22 },
+        'Tuesday': { opening: 13, closing: 22 },
+        'Wednesday': { opening: 13, closing: 22 },
+        'Thursday': { opening: 9, closing: 22 },
+        'Friday': { opening: 9, closing: 22 },
+        'Saturday': { opening: 9, closing: 22 },
+        'Sunday': { opening: 9, closing: 22 }
     },
     'PBA Canningvale': {
-        weekdays: { opening: 10, closing: 22 },
-        saturday: { opening: 9, closing: 22 },
-        sunday: { opening: 9, closing: 20 }
+        'Monday': { opening: 10, closing: 22 },
+        'Tuesday': { opening: 10, closing: 22 },
+        'Wednesday': { opening: 10, closing: 22 },
+        'Thursday': { opening: 10, closing: 22 },
+        'Friday': { opening: 10, closing: 22 },
+        'Saturday': { opening: 9, closing: 22 },
+        'Sunday': { opening: 9, closing: 20 }
     }
 };
 
 // Function to get opening and closing times
 function getOpeningClosingTimes(location, day) {
-    const isWeekend = ['Saturday', 'Sunday'].includes(day);
-    const schedule = locationSchedule[location];
-
-    if (location === 'PBA Malaga') {
-        return isWeekend ? schedule.weekend : schedule.weekdays;
-    } else if (location === 'PBA Canningvale') {
-        if (day === 'Saturday') return schedule.saturday;
-        if (day === 'Sunday') return schedule.sunday;
-        return schedule.weekdays;
-    }
-    return { opening: 0, closing: 0 };
+    return locationSchedule[location]?.[day] || { opening: 0, closing: 0 };
 }
 
 // Function to generate time options
