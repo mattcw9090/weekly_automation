@@ -1,13 +1,53 @@
 {
-    "weekStarting": "2024-12-23",
+    "weekStarting": "2024-12-09",
     "sessions": [
         {
             "studentName": "Monna",
-            "dayOfWeek": "Tuesday",
+            "dayOfWeek": "Friday",
             "courtLocation": "PBA Canningvale",
-            "sessionStart": "11:00",
-            "sessionEnd": "13:00",
+            "sessionStart": "15:00",
+            "sessionEnd": "16:00",
             "courtType": "Hebat Court",
+            "statusMessaged": true,
+            "statusBooked": false
+        },
+        {
+            "studentName": "Pema",
+            "dayOfWeek": "Friday",
+            "courtLocation": "PBA Canningvale",
+            "sessionStart": "16:00",
+            "sessionEnd": "17:00",
+            "courtType": "Hebat Court",
+            "statusMessaged": false,
+            "statusBooked": false
+        },
+        {
+            "studentName": "CJ",
+            "dayOfWeek": "Monday",
+            "courtLocation": "PBA Malaga",
+            "sessionStart": "13:30",
+            "sessionEnd": "14:30",
+            "courtType": "",
+            "statusMessaged": false,
+            "statusBooked": false
+        },
+        {
+            "studentName": "CJ",
+            "dayOfWeek": "Thursday",
+            "courtLocation": "PBA Malaga",
+            "sessionStart": "13:00",
+            "sessionEnd": "14:00",
+            "courtType": "",
+            "statusMessaged": false,
+            "statusBooked": false
+        },
+        {
+            "studentName": "Steven",
+            "dayOfWeek": "Thursday",
+            "courtLocation": "PBA Malaga",
+            "sessionStart": "14:00",
+            "sessionEnd": "15:00",
+            "courtType": "",
             "statusMessaged": false,
             "statusBooked": false
         }

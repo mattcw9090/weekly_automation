@@ -2,11 +2,31 @@
     {
         "name": "Monna",
         "contactPreference": "WhatsApp",
-        "contactInfo": "+61420212391"
+        "contactInfo": "+61426188137"
     },
     {
-        "name": "Samuel Chew",
+        "name": "Dylan",
         "contactPreference": "Instagram",
-        "contactInfo": "@chewkjs"
+        "contactInfo": "@dylanjjl"
+    },
+    {
+        "name": "Bryan",
+        "contactPreference": "Instagram",
+        "contactInfo": "@bryan_hiew14"
+    },
+    {
+        "name": "Steven",
+        "contactPreference": "Instagram",
+        "contactInfo": "@steven.man21"
+    },
+    {
+        "name": "CJ",
+        "contactPreference": "Instagram",
+        "contactInfo": "@jav_c10"
+    },
+    {
+        "name": "Pema",
+        "contactPreference": "Instagram",
+        "contactInfo": "@ee.lkigye_"
     }
 ]
