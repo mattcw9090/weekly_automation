@@ -184,57 +184,68 @@ def load_cookies(driver, url, cookie_file):
 def selenium_buy_credits_task(credits_list):
     driver = get_chrome_driver()
     try:
+        # Load necessary cookies
         load_cookies(driver, "https://www.google.com", "google_cookies.json")
+        load_cookies(driver, "https://www.paypal.com.au", "paypal_cookies.json")
         load_cookies(driver, "https://pba.yepbooking.com.au", "pba_cookies.json")
 
+        # Pre-compile the regex pattern for efficiency
+        price_pattern = re.compile(r'Price: \$([\d.]+)')
+
         for idx, credit in enumerate(credits_list):
+            # Open a new tab for each credit after the first one
             if idx > 0:
                 driver.execute_script("window.open('');")
+
+            # Switch to the current tab
             driver.switch_to.window(driver.window_handles[idx])
             wait = WebDriverWait(driver, 60)
+
             try:
+                # Navigate to the credit list page
                 driver.get("https://pba.yepbooking.com.au/user.php?tab=credit-list")
+
+                # Locate and interact with the payment credit dropdown
                 dropdown = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "paymentCreditSelect")))
                 select = Select(dropdown)
-                option = next((opt for opt in select.options if
-                               float(re.search(r'Price: \$([\d.]+)', opt.text).group(1)) == credit['amount']), None)
-                if option:
-                    select.select_by_value(option.get_attribute('value'))
-                    print(f"[Tab {idx + 1}] Selected option: {option.text}")
+
+                # Find the option that matches the credit amount
+                selected_option = next(
+                    (
+                        option for option in select.options
+                        if (match := price_pattern.search(option.text)) and float(match.group(1)) == credit['amount']
+                    ),
+                    None
+                )
+
+                if selected_option:
+                    select.select_by_value(selected_option.get_attribute('value'))
                 else:
-                    print(f"[Tab {idx + 1}] Could not find option for amount ${credit['amount']:.2f}")
+                    # Skip to the next credit if no matching option is found
                     continue
 
+                # Proceed with the payment steps
                 wait.until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentCreditLink[title='Credit top up']"))).click()
-                print(f"[Tab {idx + 1}] Clicked on 'Credit top up' button.")
-
                 wait.until(EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "input.paymentTypeCheck[type='radio'][value='PAYPAL']"))).click()
-                print(f"[Tab {idx + 1}] Selected 'Paypal' payment option.")
-
                 wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentButton[title='Pay now']"))).click()
-                print(f"[Tab {idx + 1}] Clicked on 'Pay now' button.")
 
-                load_cookies(driver, "https://www.paypal.com", "paypal_cookies.json")
+                # Load PayPal cookies and complete the purchase
                 wait.until(EC.element_to_be_clickable((By.ID, "payment-submit-btn"))).click()
-                print(f"[Tab {idx + 1}] Clicked on 'Complete Purchase' button.")
-
                 wait.until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "button.donepage-return-to-merchant-button"))).click()
-                print(f"[Tab {idx + 1}] Clicked on 'Return to Seller' button.")
 
-            except Exception as e:
-                print(f"[Tab {idx + 1}] An error occurred during booking: {e}")
+            except Exception:
+                # Handle exceptions for the current tab and continue with the next
+                continue
 
-        print("All tabs processed successfully. Browser will remain open for manual inspection.")
+        # Keep the browser open for manual inspection after processing all credits
         while True:
             time.sleep(5000)
-    except Exception as e:
-        print(f"An error occurred during grouped booking: {e}")
     finally:
+        # Ensure the browser is closed upon completion or error
         driver.quit()
-        print("Browser closed.")
 
 
 def selenium_book_court_task(starting_week, day_of_week, court_location, court_type, session_start, session_end):
@@ -395,14 +406,14 @@ def selenium_message_student_task(contact_pref, contact_info, student_name, cour
 
             try:
                 message_input = wait.until(
-                    EC.presence_of_element_located((By.XPATH, "//textarea[@aria-label='Message']")))
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//div[@aria-label='Message' and @contenteditable='true']"))
+                )
+                driver.execute_script("arguments[0].focus();", message_input)
                 message_input.send_keys(message)
                 print(f"Typed the message: {message}")
 
-                send_button = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'send-button-class')]")))
-                send_button.click()
-                print("Message sent successfully.")
+                time.sleep(500)
             except Exception as e:
                 print(f"Failed to send message: {e}")
 

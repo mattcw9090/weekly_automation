@@ -3,13 +3,13 @@
     "sessions": [
         {
             "studentName": "Monna",
-            "dayOfWeek": "Friday",
+            "dayOfWeek": "Wednesday",
             "courtLocation": "PBA Canningvale",
-            "sessionStart": "15:00",
-            "sessionEnd": "16:00",
+            "sessionStart": "15:30",
+            "sessionEnd": "16:30",
             "courtType": "Hebat Court",
             "statusMessaged": true,
-            "statusBooked": false
+            "statusBooked": true
         },
         {
             "studentName": "Pema",
@@ -18,15 +18,15 @@
             "sessionStart": "16:00",
             "sessionEnd": "17:00",
             "courtType": "Hebat Court",
-            "statusMessaged": false,
-            "statusBooked": false
+            "statusMessaged": true,
+            "statusBooked": true
         },
         {
             "studentName": "CJ",
             "dayOfWeek": "Monday",
-            "courtLocation": "PBA Malaga",
-            "sessionStart": "13:30",
-            "sessionEnd": "14:30",
+            "courtLocation": "",
+            "sessionStart": "",
+            "sessionEnd": "",
             "courtType": "",
             "statusMessaged": false,
             "statusBooked": false
@@ -38,8 +38,8 @@
             "sessionStart": "13:00",
             "sessionEnd": "14:00",
             "courtType": "",
-            "statusMessaged": false,
-            "statusBooked": false
+            "statusMessaged": true,
+            "statusBooked": true
         },
         {
             "studentName": "Steven",
@@ -48,7 +48,7 @@
             "sessionStart": "14:00",
             "sessionEnd": "15:00",
             "courtType": "",
-            "statusMessaged": false,
+            "statusMessaged": true,
             "statusBooked": false
         }
     ]
