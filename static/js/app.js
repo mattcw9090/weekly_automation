@@ -17,6 +17,50 @@ const locationSchedule = {
         'Friday': { opening: 10, closing: 22 },
         'Saturday': { opening: 9, closing: 22 },
         'Sunday': { opening: 9, closing: 20 }
+    },
+    'Kingsway': {
+        'Monday': { opening: 8.5, closing: 22 },   // 8:30 AM - 10:00 PM
+        'Tuesday': { opening: 8.5, closing: 22 },  // 8:30 AM - 10:00 PM
+        'Wednesday': { opening: 8.5, closing: 22 },// 8:30 AM - 10:00 PM
+        'Thursday': { opening: 8.5, closing: 22 }, // 8:30 AM - 10:00 PM
+        'Friday': { opening: 8.5, closing: 21 },   // 8:30 AM - 9:00 PM
+        'Saturday': { opening: 9, closing: 17 },    // 9:00 AM - 5:00 PM
+        'Sunday': { opening: 10, closing: 17 }      // 10:00 AM - 5:00 PM
+    }
+};
+
+// Rates Data Structure
+const ratesData = {
+    'PBA Malaga': {
+        'allCourts': {
+            'weekday': [
+                { start: '00:00', end: '17:00', rate: 19 },
+                { start: '17:00', end: '24:00', rate: 29 }
+            ],
+            'weekend': [
+                { start: '00:00', end: '24:00', rate: 29 }
+            ]
+        }
+    },
+    'PBA Canningvale': {
+        'Hebat Court': {
+            'weekday': [
+                { start: '00:00', end: '17:00', rate: 16 },
+                { start: '17:00', end: '24:00', rate: 26 }
+            ],
+            'weekend': [
+                { start: '00:00', end: '24:00', rate: 26 }
+            ]
+        },
+        'Super Court': {
+            'weekday': [
+                { start: '00:00', end: '17:00', rate: 19 },
+                { start: '17:00', end: '24:00', rate: 29 }
+            ],
+            'weekend': [
+                { start: '00:00', end: '24:00', rate: 29 }
+            ]
+        }
     }
 };
 
@@ -36,17 +80,22 @@ const getOpeningClosingTimes = (location, day) => locationSchedule[location]?.[d
 const generateTimeOptions = (location, day) => {
     const { opening, closing } = getOpeningClosingTimes(location, day);
     let options = '';
-    for (let h = opening; h <= closing; h++) {
-        for (let m = 0; m < 60; m += 30) {
-            if (h === closing && m > 0) break;
-            const hour12 = h % 12 || 12;
-            const minute = m.toString().padStart(2, '0');
-            const period = h < 12 ? 'AM' : 'PM';
-            const timeLabel = `${hour12}:${minute} ${period}`;
-            const timeValue = `${h.toString().padStart(2, '0')}:${minute}`;
-            options += `<option value="${timeValue}">${timeLabel}</option>`;
-        }
+    const openingMin = Math.round(opening * 60);
+    const closingMin = Math.round(closing * 60);
+
+    for (let t = openingMin; t <= closingMin; t += 30) {
+        if (t > closingMin) break;
+
+        const h = Math.floor(t / 60);
+        const m = t % 60;
+        const hour12 = h % 12 || 12;
+        const minuteStr = m.toString().padStart(2, '0');
+        const period = h < 12 ? 'AM' : 'PM';
+        const timeLabel = `${hour12}:${minuteStr} ${period}`;
+        const timeValue = `${h.toString().padStart(2, '0')}:${minuteStr}`;
+        options += `<option value="${timeValue}">${timeLabel}</option>`;
     }
+
     return options;
 };
 
@@ -61,11 +110,71 @@ const populateDropdown = (select, options, selectedValue = '', placeholder = 'Se
 const calculateCredits = (start, end, location, type, day) => {
     if (!start || !end || !location || !day) return '';
     if (location === 'PBA Canningvale' && !type) return '';
+    if (location === 'Kingsway' && !type) return '';
 
     const startMin = convertTimeToMinutes(start);
     const endMin = convertTimeToMinutes(end);
     if (endMin <= startMin) return '';
 
+    // Determine if the day is a weekend
+    const weekendDays = ['Saturday', 'Sunday'];
+    const dayType = weekendDays.includes(day) ? 'weekend' : 'weekday';
+
+    let applicableRates = [];
+
+    // Check if the location exists in ratesData
+    if (ratesData[location]) {
+        if (location === 'PBA Malaga') {
+            // For PBA Malaga, use 'allCourts'
+            applicableRates = ratesData[location].allCourts[dayType];
+        } else if (location === 'PBA Canningvale') {
+            // For PBA Canningvale, rates depend on court type
+            const courtTypeKey = type || 'allCourts'; // Fallback to 'allCourts' if type is undefined
+            if (ratesData[location][type]) {
+                applicableRates = ratesData[location][type][dayType];
+            } else {
+                // If court type not found, default to 'Super Court' rates or handle accordingly
+                applicableRates = ratesData[location]['Super Court'][dayType];
+            }
+        }
+    }
+
+    // If rates are defined in ratesData, use them
+    if (applicableRates.length > 0) {
+        let credits = [];
+        let remainingStart = startMin;
+        const sessionEnd = endMin;
+
+        applicableRates.forEach(ratePeriod => {
+            const periodStart = convertTimeToMinutes(ratePeriod.start);
+            const periodEnd = convertTimeToMinutes(ratePeriod.end);
+            const rate = ratePeriod.rate;
+
+            // Find overlap between rate period and session
+            const overlapStart = Math.max(remainingStart, periodStart);
+            const overlapEnd = Math.min(sessionEnd, periodEnd);
+
+            if (overlapStart < overlapEnd) {
+                const duration = overlapEnd - overlapStart;
+                const hours = Math.floor(duration / 60);
+                const halfHours = (duration % 60) / 30;
+
+                if (hours > 0) {
+                    credits.push(`${hours}x $${rate.toFixed(2)}`);
+                }
+                if (halfHours > 0) {
+                    credits.push(`1x $${(rate / 2).toFixed(2)}`);
+                }
+
+                remainingStart = overlapEnd;
+            }
+        });
+
+        return credits.join('<br>');
+    }
+
+    // Fallback to existing logic if location not in ratesData
+    // Existing logic for 'Kingsway' and other locations
     const rateChangePoints = ['PBA Malaga', 'PBA Canningvale'].includes(location) && !['Saturday', 'Sunday'].includes(day)
         ? [17 * 60, endMin].sort((a, b) => a - b)
         : [endMin];
@@ -81,6 +190,14 @@ const calculateCredits = (start, end, location, type, day) => {
         }
         if (location === 'PBA Canningvale') {
             rate = type === 'Hebat Court' ? (isWeekendOrAfter5PM ? 26 : 16) : (isWeekendOrAfter5PM ? 29 : 19);
+        }
+        if (location === 'Kingsway') {
+            // Assuming 'Kingsway' rates are as per original comments
+            if (!['Saturday', 'Sunday'].includes(day)) {
+                rate = currentStart >= 8.5 * 60 ? 19 : 0; // 8:30 AM is 8.5*60=510 minutes
+            } else {
+                rate = 29; // Weekend rate
+            }
         }
 
         const duration = currentEnd - currentStart;
@@ -125,7 +242,7 @@ const addNewRow = (session = {}) => {
         <td>
             <select name="courtLocation[]" class="court-location" data-type="Location" required>
                 <option value="">Select Location</option>
-                ${['PBA Canningvale','PBA Malaga']
+                ${['PBA Canningvale','PBA Malaga','Kingsway']
                     .map(loc => `<option value="${loc}">${loc}</option>`).join('')}
             </select>
         </td>
@@ -174,9 +291,33 @@ const addNewRow = (session = {}) => {
 
     const courtTypeSelect = newRow.querySelector('.court-type');
     courtTypeSelect.value = session.courtType || '';
+
+    // Handle location-based UI
+    const buyCreditsButton = newRow.querySelector('.buy-credits-button');
+    const bookCourtButton = newRow.querySelector('.book-court-button');
+
     if (session.courtLocation === 'PBA Canningvale') {
+        // Show court type for PBA Canningvale
         courtTypeSelect.classList.remove('hidden');
         courtTypeSelect.required = true;
+        // Show both action buttons for PBA Canningvale
+        buyCreditsButton.style.display = '';
+        bookCourtButton.style.display = '';
+    } else if (session.courtLocation === 'Kingsway') {
+        // Hide court type for Kingsway
+        courtTypeSelect.classList.add('hidden');
+        courtTypeSelect.required = false;
+        courtTypeSelect.value = '';
+        // Hide Buy Credits and Book Court for Kingsway
+        buyCreditsButton.style.display = 'none';
+        bookCourtButton.style.display = 'none';
+    } else {
+        // For PBA Malaga or if location not yet selected:
+        courtTypeSelect.classList.add('hidden');
+        courtTypeSelect.required = false;
+        courtTypeSelect.value = '';
+        buyCreditsButton.style.display = '';
+        bookCourtButton.style.display = '';
     }
 
     populateTimeDropdowns(newRow, session.sessionStart, session.sessionEnd);
@@ -242,14 +383,27 @@ const handleCourtLocationChange = event => {
     const row = event.target.closest('tr');
     const courtType = row.querySelector('.court-type');
     const location = event.target.value;
+    const buyCreditsBtn = row.querySelector('.buy-credits-button');
+    const bookCourtBtn = row.querySelector('.book-court-button');
 
     if (location === 'PBA Canningvale') {
         courtType.classList.remove('hidden');
         courtType.required = true;
-    } else {
+        if (buyCreditsBtn) buyCreditsBtn.style.display = '';
+        if (bookCourtBtn) bookCourtBtn.style.display = '';
+    } else if (location === 'Kingsway') {
         courtType.classList.add('hidden');
         courtType.required = false;
         courtType.value = '';
+        if (buyCreditsBtn) buyCreditsBtn.style.display = 'none';
+        if (bookCourtBtn) bookCourtBtn.style.display = 'none';
+    } else {
+        // PBA Malaga or if no location yet
+        courtType.classList.add('hidden');
+        courtType.required = false;
+        courtType.value = '';
+        if (buyCreditsBtn) buyCreditsBtn.style.display = '';
+        if (bookCourtBtn) bookCourtBtn.style.display = '';
     }
 
     populateTimeDropdowns(row);
@@ -381,6 +535,7 @@ const handleAddToCalendar = row => {
     const startingWeek = document.getElementById('weekStarting').value;
     const data = {
         startingWeek,
+        studentName: row.querySelector('.student-name').value,
         dayOfWeek: row.querySelector('.day-of-week').value,
         courtLocation: row.querySelector('.court-location').value,
         sessionStart: row.querySelector('.session-start').value,

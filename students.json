@@ -28,5 +28,15 @@
         "name": "Pema",
         "contactPreference": "Instagram",
         "contactInfo": "@ee.lkigye_"
+    },
+    {
+        "name": "Rish",
+        "contactPreference": "Instagram",
+        "contactInfo": "@rhishindran"
+    },
+    {
+        "name": "Justin",
+        "contactPreference": "WhatsApp",
+        "contactInfo": "+61468760693"
     }
 ]

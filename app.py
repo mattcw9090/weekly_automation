@@ -59,17 +59,12 @@ def save_json(file_path, data):
 
 def get_calendar_service():
     creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
     return build('calendar', 'v3', credentials=creds)
 
 
@@ -90,7 +85,7 @@ def click_element_with_retry(driver, element, retries=3, delay=1):
 
 
 # Google Calendar Integration
-def add_event_to_calendar(starting_week, day_of_week, court_location, session_start, session_end):
+def add_event_to_calendar(starting_week, student_name, day_of_week, court_location, session_start, session_end):
     service = get_calendar_service()
     starting_date = datetime.strptime(starting_week, "%Y-%m-%d")
     booking_date = starting_date + timedelta(days=DAY_OF_WEEK_MAPPING[day_of_week])
@@ -99,7 +94,7 @@ def add_event_to_calendar(starting_week, day_of_week, court_location, session_st
     end_time = datetime.combine(booking_date, datetime.strptime(session_end, '%H:%M').time())
 
     event = {
-        'summary': f'Coaching Session at {court_location}',
+        'summary': f'Coaching Session for {student_name} at {court_location}',
         'location': court_location,
         'start': {'dateTime': start_time.isoformat(), 'timeZone': TIMEZONE},
         'end': {'dateTime': end_time.isoformat(), 'timeZone': TIMEZONE},
@@ -138,11 +133,11 @@ def save_config():
 @app.route('/add-to-calendar', methods=['POST'])
 def add_to_calendar():
     data = request.get_json()
-    required_fields = ['startingWeek', 'dayOfWeek', 'courtLocation', 'sessionStart', 'sessionEnd']
+    required_fields = ['startingWeek', 'studentName', 'dayOfWeek', 'courtLocation', 'sessionStart', 'sessionEnd']
     if not data or not all(field in data for field in required_fields):
         return "Missing required fields.", 400
     threading.Thread(target=add_event_to_calendar, args=(
-        data['startingWeek'], data['dayOfWeek'], data['courtLocation'],
+        data['startingWeek'], data['studentName'], data['dayOfWeek'], data['courtLocation'],
         data['sessionStart'], data['sessionEnd']
     )).start()
     return "Adding event to calendar in progress!", 200
@@ -226,7 +221,7 @@ def selenium_buy_credits_task(credits_list):
 
                 # Proceed with the payment steps
                 wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentCreditLink[title='Credit top up']"))).click()
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentCreditLink[title='Top up credit']"))).click()
                 wait.until(EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "input.paymentTypeCheck[type='radio'][value='PAYPAL']"))).click()
                 wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.paymentButton[title='Pay now']"))).click()
@@ -264,35 +259,27 @@ def selenium_book_court_task(starting_week, day_of_week, court_location, court_t
         if not button_id:
             raise ValueError("Invalid court location or type provided.")
         wait.until(EC.element_to_be_clickable((By.ID, button_id))).click()
-        print(f"Selected court button for {court_location} - {court_type}.")
 
         starting_date = datetime.strptime(starting_week, "%Y-%m-%d")
         booking_date = starting_date + timedelta(days=DAY_OF_WEEK_MAPPING[day_of_week])
-        print(f"Calculated booking date: {booking_date.strftime('%Y-%m-%d')}")
-
-        # Handle modal if it appears
-        try:
-            modal = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-dialog")))
-            modal.find_element(By.CSS_SELECTOR, "button.ui-dialog-titlebar-close").click()
-            print("Closed the modal dialog box.")
-        except TimeoutException:
-            print("No modal dialog appeared.")
 
         # Navigate to the correct month and year on the calendar
         target_month_year = booking_date.strftime("%B %Y")
         while True:
-            displayed_month = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-month"))).text
-            displayed_year = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-year"))).text
-            if f"{displayed_month} {displayed_year}" == target_month_year:
-                print("Calendar is displaying the correct month and year.")
+            displayed_month_element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-month")))
+            displayed_year_element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ui-datepicker-year")))
+            displayed_month = displayed_month_element.text
+            displayed_year = displayed_year_element.text
+            current_display = f"{displayed_month} {displayed_year}"
+            if current_display == target_month_year:
                 break
-            elif datetime.strptime(f"{displayed_month} {displayed_year}", "%B %Y") < booking_date:
+            elif datetime.strptime(current_display, "%B %Y") < booking_date:
                 wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "ui-datepicker-next"))).click()
-                print("Navigated to the next month.")
             else:
                 wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "ui-datepicker-prev"))).click()
-                print("Navigated to the previous month.")
-            wait.until(EC.staleness_of(displayed_month))
+            # Wait for the calendar to update
+            time.sleep(1)  # Allow calendar to update
+            wait.until(EC.staleness_of(displayed_month_element))
 
         # Select the booking day
         target_day = booking_date.day
@@ -300,15 +287,12 @@ def selenium_book_court_task(starting_week, day_of_week, court_location, court_t
             day_element = wait.until(
                 EC.element_to_be_clickable((By.XPATH, f"//td[@data-handler='selectDay']/a[text()='{target_day}']")))
             day_element.click()
-            print(f"Selected the day: {target_day}")
-        except Exception as e:
-            print(f"Failed to select the day {target_day}: {e}")
+        except Exception:
             return
 
         # Timeblock selection
         try:
             schema_wrapper = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'schemaWrapper')))
-            print("Schedule loaded.")
 
             desired_start = datetime.strptime(session_start, '%H:%M')
             desired_end = datetime.strptime(session_end, '%H:%M')
@@ -318,12 +302,21 @@ def selenium_book_court_task(starting_week, day_of_week, court_location, court_t
 
             for row in rows:
                 try:
+                    if not row.is_displayed():
+                        continue
+
                     time_blocks = row.find_elements(By.XPATH, ".//td/div[@class='divHour']/a")
-                    available_blocks = {
-                        datetime.strptime(block.get_attribute('title').split('–')[0], '%I:%M%p'): block
-                        for block in time_blocks
-                        if "Available" in block.get_attribute('title')
-                    }
+
+                    available_blocks = {}
+                    for block in time_blocks:
+                        title = block.get_attribute('title')
+                        if "Available" in title:
+                            try:
+                                block_time_str = title.split('–')[0].strip()
+                                block_time = datetime.strptime(block_time_str, '%I:%M%p')
+                                available_blocks[block_time] = block
+                            except ValueError:
+                                continue
 
                     blocks_to_click = []
                     current_time = desired_start
@@ -340,40 +333,44 @@ def selenium_book_court_task(starting_week, day_of_week, court_location, court_t
                             if not click_element_with_retry(driver, block):
                                 break
                         booking_successful = True
-                        print("Consecutive time blocks selected successfully.")
                         break
                 except StaleElementReferenceException:
-                    print("StaleElementReferenceException encountered. Retrying row.")
+                    continue
+                except Exception:
                     continue
 
             if not booking_successful:
-                print("Could not find the required consecutive time blocks.")
                 return
 
             # Proceed with booking
-            wait.until(EC.element_to_be_clickable(
-                (By.XPATH, "//a[contains(@class, 'showRecapDialog') and contains(@title, 'Continue')]"))).click()
-            print("Clicked on 'Continue' button.")
+            try:
+                continue_button = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, "//a[contains(@class, 'showRecapDialog') and contains(@title, 'Continue')]")))
+                continue_button.click()
+            except Exception:
+                return
 
-            wait.until(EC.element_to_be_clickable(
-                (By.XPATH, "//a[contains(@class, 'ui-state-default') and contains(text(), 'Book')]"))).click()
-            print("Clicked on 'BOOK' button.")
+            try:
+                book_button = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, "//a[contains(@class, 'ui-state-default') and contains(text(), 'Book')]")))
+                book_button.click()
+            except Exception:
+                return
 
-        except Exception as e:
-            print(f"An error occurred during timeblock selection: {e}")
+        except Exception:
+            pass
 
         # Keep the browser open for manual inspection
         try:
             while True:
                 time.sleep(5000)
         except KeyboardInterrupt:
-            print("Manual interruption received. Closing browser.")
+            pass
 
-    except Exception as e:
-        print(f"An error occurred during court booking: {e}")
+    except Exception:
+        pass
     finally:
         driver.quit()
-        print("Browser closed.")
 
 
 def selenium_message_student_task(contact_pref, contact_info, student_name, court_location, day_of_week, start_time,
